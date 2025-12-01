@@ -10,6 +10,8 @@ export interface ParsedNotification {
   url: string;
   /** GraphQL node ID (NT_kwDO...) for mutations */
   id: string;
+  /** GraphQL node ID of the subscribable subject (PR/Issue) for unsubscribe */
+  subjectId: string;
   unread: boolean;
   updatedAt: Date;
   createdAt: Date;

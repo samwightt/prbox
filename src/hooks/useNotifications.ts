@@ -47,6 +47,7 @@ interface GraphQLNotification {
   lastUpdatedAt: string;
   optionalSubject: {
     __typename: string;
+    id: string;
     number?: number;
     title?: string;
     url?: string;
@@ -140,6 +141,7 @@ query($login: String!) {
         optionalSubject {
           __typename
           ... on PullRequest {
+            id
             number
             title
             url
@@ -455,6 +457,7 @@ export function useNotifications() {
           author: subject.author?.login ?? null,
           url: subject.url ?? "",
           id: n.id,
+          subjectId: subject.id,
           unread: n.isUnread,
           updatedAt: new Date(n.lastUpdatedAt),
           createdAt: new Date(subject.createdAt ?? n.lastUpdatedAt),
@@ -573,6 +576,10 @@ export function useNotifications() {
   };
 
   const unsubscribe = async (id: string) => {
+    // Find the notification to get its subjectId (the PR's GraphQL ID)
+    const notification = notifications.find((n) => n.id === id);
+    if (!notification) return;
+
     const mutation = `
       mutation($id: ID!) {
         unsubscribeFromNotifications(input: { ids: [$id] }) {
@@ -580,20 +587,20 @@ export function useNotifications() {
         }
       }
     `;
-    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${id}`]);
+    // Use the PR's subjectId, not the notification thread ID
+    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${notification.subjectId}`]);
 
     // Mark as unsubscribed in seen data
     const seenData = await loadSeenNotifications();
     if (seenData.seen[id]) {
       seenData.seen[id].unsubscribed = true;
     } else {
-      const notification = notifications.find((n) => n.id === id);
       seenData.seen[id] = {
         firstSeen: new Date().toISOString(),
         lastSeen: new Date().toISOString(),
-        prNumber: notification?.prNumber ?? 0,
-        repo: notification?.repo ?? "",
-        title: notification?.cleanTitle ?? "",
+        prNumber: notification.prNumber,
+        repo: notification.repo,
+        title: notification.cleanTitle,
         unsubscribed: true,
       };
     }
