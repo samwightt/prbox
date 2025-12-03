@@ -1,5 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { render, Box, Text, useStdout } from "ink";
+import { Provider } from "react-redux";
+import { store } from "./store";
+import { useAppSelector } from "./store/hooks";
 import { useNotifications } from "./hooks/useNotifications";
 import { useTabs, useFilteredNotifications, useVisibleNotifications } from "./hooks/useDisplayItems";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
@@ -20,9 +23,17 @@ function App() {
   // 2. Get tabs from notifications
   const tabs = useTabs(notifications);
 
-  // 3. Handle keyboard navigation
+  // 3. Get selectedTabIndex from Redux FIRST (needed to compute filteredNotifications)
+  const selectedTabIndex = useAppSelector((state) => state.ui.selectedTabIndex);
+  const selectedTab = tabs[selectedTabIndex]?.reason ?? null;
+
+  // 4. Filter notifications based on selected tab
+  const filteredNotifications = useFilteredNotifications(notifications, selectedTab);
+
+  // 5. Handle keyboard navigation - pass filteredNotifications directly!
   const nav = useKeyboardNav({
-    tabCount: tabs.length || 1, // Avoid division by zero
+    tabCount: tabs.length || 1,
+    filteredNotifications,
     onMarkRead: markAsRead,
     onMarkUnread: markAsUnread,
     onMarkDone: markAsDone,
@@ -30,14 +41,7 @@ function App() {
     onRefresh: refresh,
   });
 
-  // 4. Get selected tab and filter notifications
-  const selectedTab = tabs[nav.selectedTabIndex]?.reason ?? null;
-  const filteredNotifications = useFilteredNotifications(notifications, selectedTab);
-
-  // 5. Update the filtered list ref in nav hook
-  useEffect(() => {
-    nav.setFilteredList(filteredNotifications);
-  }, [filteredNotifications]);
+  // NO MORE useEffect to sync filteredNotifications!
 
   // 6. Calculate visible notifications
   const { visible: visibleNotifications, scrollOffset } = useVisibleNotifications(
@@ -93,4 +97,13 @@ function App() {
   );
 }
 
-render(<App />, { patchConsole: false });
+// Wrap with Redux Provider
+function Root() {
+  return (
+    <Provider store={store}>
+      <App />
+    </Provider>
+  );
+}
+
+render(<Root />, { patchConsole: false });

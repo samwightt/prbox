@@ -1,9 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useInput } from "ink";
+import { store } from "../store";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  moveSelectionUp,
+  moveSelectionDown,
+  setTabCount,
+  setEscapePressed,
+  setExiting,
+  setShowHelp,
+  setGPressed,
+  adjustSelectionAfterRemoval,
+  createNavigationAction,
+} from "../store/uiSlice";
 import type { ParsedNotification } from "../types";
 
 interface UseKeyboardNavOptions {
   tabCount: number;
+  filteredNotifications: ParsedNotification[];
   onMarkRead: (id: string) => void;
   onMarkUnread: (id: string) => void;
   onMarkDone: (id: string) => void;
@@ -12,163 +26,142 @@ interface UseKeyboardNavOptions {
 }
 
 /**
- * Manages keyboard navigation state.
- * Returns selectedTabIndex which should be used to filter the list,
- * then call setFilteredList with the result.
+ * Manages keyboard navigation via Redux.
+ * Uses store.getState() in useInput callback to bypass stale closure issues.
  */
-export function useKeyboardNav({ tabCount, onMarkRead, onMarkUnread, onMarkDone, onUnsubscribe, onRefresh }: UseKeyboardNavOptions) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const [escapePressed, setEscapePressed] = useState(false);
-  const [gPressed, setGPressed] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+export function useKeyboardNav({
+  tabCount,
+  filteredNotifications,
+  onMarkRead,
+  onMarkUnread,
+  onMarkDone,
+  onUnsubscribe,
+  onRefresh,
+}: UseKeyboardNavOptions) {
+  const dispatch = useAppDispatch();
 
-  // Store filtered list in a ref so useInput callback can access current value
-  const filteredListRef = useRef<ParsedNotification[]>([]);
+  // Read from Redux for component render
+  const { selectedIndex, selectedTabIndex, escapePressed, gPressed, exiting, showHelp } =
+    useAppSelector((state) => state.ui);
 
-  // Reset selection when tab changes
+  // Sync tabCount to store when it changes
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [selectedTabIndex]);
+    dispatch(setTabCount(tabCount));
+  }, [tabCount, dispatch]);
 
   useInput((input, key) => {
-    if (exiting) return;
+    // Use store.getState() to get FRESH state - bypasses React's closure problem!
+    const state = store.getState().ui;
 
-    const filteredList = filteredListRef.current;
+    if (state.exiting) return;
 
-    // Toggle help with ?
-    if (input === "?") {
-      setShowHelp((h) => !h);
+    // Check if this is a navigation key
+    const navigationAction = createNavigationAction(
+      input,
+      { tab: key.tab, shift: key.shift },
+      filteredNotifications.length
+    );
+
+    if (navigationAction) {
+      // Navigation key - but if help is showing and it's not "?", just dismiss help
+      if (state.showHelp && input !== "?") {
+        dispatch(setShowHelp(false));
+        return;
+      }
+      dispatch(navigationAction);
       return;
     }
 
-    // Dismiss help on any key
-    if (showHelp) {
-      setShowHelp(false);
+    // Dismiss help on any other key
+    if (state.showHelp) {
+      dispatch(setShowHelp(false));
       return;
     }
 
+    // Escape handling (has side effect: process.exit)
     if (key.escape) {
-      if (escapePressed) {
-        setExiting(true);
+      if (state.escapePressed) {
+        dispatch(setExiting(true));
         setTimeout(() => process.exit(0), 50);
       } else {
-        setEscapePressed(true);
-        setGPressed(false);
+        dispatch(setEscapePressed(true));
+        dispatch(setGPressed(false));
       }
       return;
     }
 
     // Reset escape on any other key
-    if (escapePressed) {
-      setEscapePressed(false);
+    if (state.escapePressed) {
+      dispatch(setEscapePressed(false));
     }
 
-    // Tab/l = next tab, Shift+Tab/h = previous tab
-    if (key.tab || input === "l") {
-      if (key.shift) {
-        setSelectedTabIndex((i) => (i - 1 + tabCount) % tabCount);
-      } else {
-        setSelectedTabIndex((i) => (i + 1) % tabCount);
-      }
-      return;
+    // Reset g on any other key (navigation keys handle their own g reset)
+    if (state.gPressed) {
+      dispatch(setGPressed(false));
     }
 
-    if (input === "h") {
-      setSelectedTabIndex((i) => (i - 1 + tabCount) % tabCount);
-      return;
-    }
-
-    // Handle g/G vim motions
-    if (input === "G") {
-      setSelectedIndex(Math.max(0, filteredList.length - 1));
-      setGPressed(false);
-      return;
-    }
-
-    if (input === "g") {
-      if (gPressed) {
-        setSelectedIndex(0);
-        setGPressed(false);
-      } else {
-        setGPressed(true);
-      }
-      return;
-    }
-
-    // Reset g on any other key
-    if (gPressed) {
-      setGPressed(false);
-    }
-
+    // Quit (has side effect: process.exit)
     if (input === "q") {
-      setExiting(true);
+      dispatch(setExiting(true));
       setTimeout(() => process.exit(0), 50);
       return;
     }
 
+    // Selection navigation
     if (key.downArrow || input === "j") {
-      setSelectedIndex((i) => Math.min(i + 1, filteredList.length - 1));
+      dispatch(moveSelectionDown({ listLength: filteredNotifications.length }));
     }
 
     if (key.upArrow || input === "k") {
-      setSelectedIndex((i) => Math.max(i - 1, 0));
+      dispatch(moveSelectionUp());
     }
 
+    // Open in browser (has side effect: Bun.spawn)
     if (key.return) {
-      const selected = filteredList[selectedIndex];
+      const selected = filteredNotifications[state.selectedIndex];
       if (selected) {
         Bun.spawn(["open", selected.url]);
       }
     }
 
-    // m = mark as read
+    // m = mark as read (has side effect: mutation callback)
     if (input === "m") {
-      const selected = filteredList[selectedIndex];
-      if (selected && selected.unread) {
+      const selected = filteredNotifications[state.selectedIndex];
+      if (selected?.unread) {
         onMarkRead(selected.id);
       }
     }
 
-    // M = mark as unread
+    // M = mark as unread (has side effect: mutation callback)
     if (input === "M") {
-      const selected = filteredList[selectedIndex];
+      const selected = filteredNotifications[state.selectedIndex];
       if (selected && !selected.unread) {
         onMarkUnread(selected.id);
       }
     }
 
-    // d or y = mark as done (y for gmail muscle memory)
+    // d or y = mark as done (has side effect: mutation callback)
     if (input === "d" || input === "y") {
-      const selected = filteredList[selectedIndex];
+      const selected = filteredNotifications[state.selectedIndex];
       if (selected) {
         onMarkDone(selected.id);
-        // Adjust selection if we removed the last item
-        if (selectedIndex >= filteredList.length - 1) {
-          setSelectedIndex((i) => Math.max(0, i - 1));
-        }
+        dispatch(adjustSelectionAfterRemoval({ newListLength: filteredNotifications.length - 1 }));
       }
     }
 
-    // R = refresh
+    // R = refresh (has side effect: refresh callback)
     if (input === "R") {
       onRefresh();
     }
 
-    // U = unsubscribe
+    // U = unsubscribe (has side effect: mutation callback)
     if (input === "U") {
-      const selected = filteredList[selectedIndex];
+      const selected = filteredNotifications[state.selectedIndex];
       if (selected) {
         onUnsubscribe(selected.id);
       }
     }
   });
-
-  // Function to update the filtered list ref
-  const setFilteredList = (list: ParsedNotification[]) => {
-    filteredListRef.current = list;
-  };
 
   return {
     selectedIndex,
@@ -177,6 +170,5 @@ export function useKeyboardNav({ tabCount, onMarkRead, onMarkUnread, onMarkDone,
     gPressed,
     exiting,
     showHelp,
-    setFilteredList,
   };
 }
