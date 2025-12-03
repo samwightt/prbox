@@ -3,6 +3,18 @@
 `prbox` is a CLI tool that makes GitHub notifications actually useful. It lets you easily triage and manage
 your notifications via the CLI.
 
+To install:
+
+```sh
+npm install -g prbox
+```
+
+or:
+
+```sh
+bun install -g prbox
+```
+
 ## The problem
 
 Teams with monorepos or whose members are assigned to multiple GitHub teams often have very large notification volume.
