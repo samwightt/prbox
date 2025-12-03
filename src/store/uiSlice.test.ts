@@ -1,9 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import type { UiState } from "./uiSlice";
 import uiReducer, {
-  nextTab,
-  prevTab,
-  setTabCount,
   moveSelectionUp,
   moveSelectionDown,
   jumpToStart,
@@ -26,53 +23,17 @@ const initialState: UiState = {
   gPressed: false,
   exiting: false,
   showHelp: false,
-  tabCount: 1,
   terminalHeight: 24,
 };
 
 describe("uiSlice", () => {
+  // Note: nextTab/prevTab are now thunks in keyboardThunks.ts that use selectTabCount
   describe("tab navigation", () => {
-    test("nextTab wraps around", () => {
-      const state = { ...initialState, tabCount: 3, selectedTabIndex: 2 };
-      const result = uiReducer(state, nextTab());
-      expect(result.selectedTabIndex).toBe(0);
-    });
-
-    test("nextTab increments normally", () => {
-      const state = { ...initialState, tabCount: 3, selectedTabIndex: 0 };
-      const result = uiReducer(state, nextTab());
-      expect(result.selectedTabIndex).toBe(1);
-    });
-
-    test("prevTab wraps around", () => {
-      const state = { ...initialState, tabCount: 3, selectedTabIndex: 0 };
-      const result = uiReducer(state, prevTab());
+    test("setSelectedTabIndex resets selectedIndex to 0", () => {
+      const state = { ...initialState, selectedTabIndex: 0, selectedIndex: 5 };
+      const result = uiReducer(state, setSelectedTabIndex(2));
       expect(result.selectedTabIndex).toBe(2);
-    });
-
-    test("prevTab decrements normally", () => {
-      const state = { ...initialState, tabCount: 3, selectedTabIndex: 2 };
-      const result = uiReducer(state, prevTab());
-      expect(result.selectedTabIndex).toBe(1);
-    });
-
-    test("tab change resets selectedIndex to 0", () => {
-      const state = { ...initialState, tabCount: 3, selectedTabIndex: 0, selectedIndex: 5 };
-      const result = uiReducer(state, nextTab());
       expect(result.selectedIndex).toBe(0);
-    });
-
-    test("setTabCount adjusts selectedTabIndex if out of bounds", () => {
-      const state = { ...initialState, tabCount: 5, selectedTabIndex: 4 };
-      const result = uiReducer(state, setTabCount(3));
-      expect(result.tabCount).toBe(3);
-      expect(result.selectedTabIndex).toBe(2);
-    });
-
-    test("setTabCount minimum is 1", () => {
-      const state = { ...initialState, tabCount: 3 };
-      const result = uiReducer(state, setTabCount(0));
-      expect(result.tabCount).toBe(1);
     });
   });
 
@@ -107,12 +68,6 @@ describe("uiSlice", () => {
       expect(result.selectedIndex).toBe(5);
     });
 
-    test("setSelectedTabIndex resets selectedIndex", () => {
-      const state = { ...initialState, selectedIndex: 5, selectedTabIndex: 0 };
-      const result = uiReducer(state, setSelectedTabIndex(2));
-      expect(result.selectedTabIndex).toBe(2);
-      expect(result.selectedIndex).toBe(0);
-    });
   });
 
   describe("vim motions", () => {

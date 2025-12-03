@@ -114,11 +114,16 @@ export const selectTabCount = createSelector(
 
 /**
  * Select the currently selected tab.
+ * If the selected index is out of bounds, uses the closest previous valid index.
  */
 export const selectSelectedTab = createSelector(
   selectTabs,
   (state: RootState) => state.ui.selectedTabIndex,
-  (tabs, selectedTabIndex): string | null => tabs[selectedTabIndex]?.reason ?? null
+  (tabs, selectedTabIndex): string | null => {
+    if (tabs.length === 0) return null;
+    const clampedIndex = Math.min(selectedTabIndex, tabs.length - 1);
+    return tabs[clampedIndex]?.reason ?? null;
+  }
 );
 
 /**

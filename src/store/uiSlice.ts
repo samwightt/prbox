@@ -8,7 +8,6 @@ export interface UiState {
   gPressed: boolean;
   exiting: boolean;
   showHelp: boolean;
-  tabCount: number;
   terminalHeight: number;
 }
 
@@ -19,7 +18,6 @@ const initialState: UiState = {
   gPressed: false,
   exiting: false,
   showHelp: false,
-  tabCount: 1,
   terminalHeight: 24,
 };
 
@@ -48,20 +46,6 @@ export const uiSlice = createSlice({
     setSelectedTabIndex: (state, action: PayloadAction<number>) => {
       state.selectedTabIndex = action.payload;
       state.selectedIndex = 0;
-    },
-    nextTab: (state) => {
-      state.selectedTabIndex = (state.selectedTabIndex + 1) % state.tabCount;
-      state.selectedIndex = 0;
-    },
-    prevTab: (state) => {
-      state.selectedTabIndex = (state.selectedTabIndex - 1 + state.tabCount) % state.tabCount;
-      state.selectedIndex = 0;
-    },
-    setTabCount: (state, action: PayloadAction<number>) => {
-      state.tabCount = Math.max(1, action.payload);
-      if (state.selectedTabIndex >= state.tabCount) {
-        state.selectedTabIndex = state.tabCount - 1;
-      }
     },
     setTerminalHeight: (state, action: PayloadAction<number>) => {
       state.terminalHeight = action.payload;
@@ -113,9 +97,6 @@ export const {
   jumpToStart,
   jumpToEnd,
   setSelectedTabIndex,
-  nextTab,
-  prevTab,
-  setTabCount,
   setTerminalHeight,
   setGPressed,
   pressG,

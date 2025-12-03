@@ -11,9 +11,7 @@ import {
   selectNotificationsRefreshing,
   selectNotificationsError,
   selectTabs,
-  selectTabCount,
   selectSelectedTab,
-  selectFilteredNotifications,
   selectVisibleNotifications,
 } from "./store/selectors";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
@@ -45,13 +43,11 @@ function App() {
   const refreshing = useAppSelector(selectNotificationsRefreshing);
   const error = useAppSelector(selectNotificationsError);
   const tabs = useAppSelector(selectTabs);
-  const tabCount = useAppSelector(selectTabCount);
   const selectedTab = useAppSelector(selectSelectedTab);
-  const filteredNotifications = useAppSelector(selectFilteredNotifications);
   const { visible: visibleNotifications, scrollOffset } = useAppSelector(selectVisibleNotifications);
 
   // Handle keyboard navigation
-  const nav = useKeyboardNav({ tabCount });
+  const nav = useKeyboardNav();
 
   if (nav.exiting) {
     return <ByeScreen />;

@@ -2,8 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState, AppDispatch } from "./index";
 import {
   toggleHelp,
-  nextTab,
-  prevTab,
+  setSelectedTabIndex,
   jumpToEnd,
   pressG,
   adjustSelectionAfterRemoval,
@@ -15,7 +14,37 @@ import {
   setGPressed,
 } from "./uiSlice";
 import { notificationsApi } from "./api/notificationsApi";
-import { selectFilteredNotifications, selectFilteredNotificationsLength } from "./selectors";
+import { selectFilteredNotifications, selectFilteredNotificationsLength, selectTabCount } from "./selectors";
+
+/**
+ * Thunk for navigating to the next tab.
+ * Uses selectTabCount to wrap around.
+ */
+export const nextTab = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("keyboard/nextTab", async (_, { dispatch, getState }) => {
+  const state = getState();
+  const tabCount = selectTabCount(state);
+  const currentTab = state.ui.selectedTabIndex;
+  dispatch(setSelectedTabIndex((currentTab + 1) % tabCount));
+});
+
+/**
+ * Thunk for navigating to the previous tab.
+ * Uses selectTabCount to wrap around.
+ */
+export const prevTab = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("keyboard/prevTab", async (_, { dispatch, getState }) => {
+  const state = getState();
+  const tabCount = selectTabCount(state);
+  const currentTab = state.ui.selectedTabIndex;
+  dispatch(setSelectedTabIndex((currentTab - 1 + tabCount) % tabCount));
+});
 
 /**
  * Thunk for marking a notification as read.
