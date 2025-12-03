@@ -17,7 +17,6 @@ import uiReducer, {
   adjustSelectionAfterRemoval,
   setSelectedIndex,
   setSelectedTabIndex,
-  createNavigationAction,
 } from "./uiSlice";
 
 const initialState: UiState = {
@@ -62,18 +61,6 @@ describe("uiSlice", () => {
       expect(result.selectedIndex).toBe(0);
     });
 
-    test("nextTab resets gPressed", () => {
-      const state = { ...initialState, tabCount: 3, gPressed: true };
-      const result = uiReducer(state, nextTab());
-      expect(result.gPressed).toBe(false);
-    });
-
-    test("prevTab resets gPressed", () => {
-      const state = { ...initialState, tabCount: 3, gPressed: true };
-      const result = uiReducer(state, prevTab());
-      expect(result.gPressed).toBe(false);
-    });
-
     test("setTabCount adjusts selectedTabIndex if out of bounds", () => {
       const state = { ...initialState, tabCount: 5, selectedTabIndex: 4 };
       const result = uiReducer(state, setTabCount(3));
@@ -113,18 +100,6 @@ describe("uiSlice", () => {
       expect(result.selectedIndex).toBe(2);
     });
 
-    test("moveSelectionUp resets gPressed", () => {
-      const state = { ...initialState, selectedIndex: 3, gPressed: true };
-      const result = uiReducer(state, moveSelectionUp());
-      expect(result.gPressed).toBe(false);
-    });
-
-    test("moveSelectionDown resets gPressed", () => {
-      const state = { ...initialState, selectedIndex: 0, gPressed: true };
-      const result = uiReducer(state, moveSelectionDown({ listLength: 5 }));
-      expect(result.gPressed).toBe(false);
-    });
-
     test("setSelectedIndex sets exact value", () => {
       const state = { ...initialState, selectedIndex: 0 };
       const result = uiReducer(state, setSelectedIndex(5));
@@ -150,12 +125,6 @@ describe("uiSlice", () => {
       const state = { ...initialState, selectedIndex: 0 };
       const result = uiReducer(state, jumpToEnd({ listLength: 10 }));
       expect(result.selectedIndex).toBe(9);
-    });
-
-    test("jumpToEnd resets gPressed", () => {
-      const state = { ...initialState, selectedIndex: 0, gPressed: true };
-      const result = uiReducer(state, jumpToEnd({ listLength: 10 }));
-      expect(result.gPressed).toBe(false);
     });
 
     test("jumpToEnd handles empty list", () => {
@@ -185,12 +154,6 @@ describe("uiSlice", () => {
       expect(result1.showHelp).toBe(true);
       const result2 = uiReducer(result1, toggleHelp());
       expect(result2.showHelp).toBe(false);
-    });
-
-    test("toggleHelp resets gPressed", () => {
-      const state = { ...initialState, gPressed: true };
-      const result = uiReducer(state, toggleHelp());
-      expect(result.gPressed).toBe(false);
     });
 
     test("setShowHelp sets exact value", () => {
@@ -238,53 +201,4 @@ describe("uiSlice", () => {
     });
   });
 
-  describe("createNavigationAction", () => {
-    const key = (tab = false, shift = false) => ({ tab, shift });
-
-    test("? returns toggleHelp action", () => {
-      const action = createNavigationAction("?", key(), 10);
-      expect(action?.type).toBe("ui/toggleHelp");
-    });
-
-    test("l returns nextTab action", () => {
-      const action = createNavigationAction("l", key(), 10);
-      expect(action?.type).toBe("ui/nextTab");
-    });
-
-    test("Tab returns nextTab action", () => {
-      const action = createNavigationAction("", key(true, false), 10);
-      expect(action?.type).toBe("ui/nextTab");
-    });
-
-    test("h returns prevTab action", () => {
-      const action = createNavigationAction("h", key(), 10);
-      expect(action?.type).toBe("ui/prevTab");
-    });
-
-    test("Shift+Tab returns prevTab action", () => {
-      const action = createNavigationAction("", key(true, true), 10);
-      expect(action?.type).toBe("ui/prevTab");
-    });
-
-    test("G returns jumpToEnd action with listLength", () => {
-      const action = createNavigationAction("G", key(), 15);
-      expect(action?.type).toBe("ui/jumpToEnd");
-      expect((action as any).payload).toEqual({ listLength: 15 });
-    });
-
-    test("g returns pressG action", () => {
-      const action = createNavigationAction("g", key(), 10);
-      expect(action?.type).toBe("ui/pressG");
-    });
-
-    test("unknown key returns null", () => {
-      const action = createNavigationAction("j", key(), 10);
-      expect(action).toBeNull();
-    });
-
-    test("q returns null (not a navigation key)", () => {
-      const action = createNavigationAction("q", key(), 10);
-      expect(action).toBeNull();
-    });
-  });
 });

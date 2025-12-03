@@ -31,18 +31,15 @@ export const uiSlice = createSlice({
     },
     moveSelectionUp: (state) => {
       state.selectedIndex = Math.max(state.selectedIndex - 1, 0);
-      state.gPressed = false;
     },
     moveSelectionDown: (state, action: PayloadAction<{ listLength: number }>) => {
       state.selectedIndex = Math.min(state.selectedIndex + 1, action.payload.listLength - 1);
-      state.gPressed = false;
     },
     jumpToStart: (state) => {
       state.selectedIndex = 0;
     },
     jumpToEnd: (state, action: PayloadAction<{ listLength: number }>) => {
       state.selectedIndex = Math.max(0, action.payload.listLength - 1);
-      state.gPressed = false;
     },
 
     // Tab navigation
@@ -53,12 +50,10 @@ export const uiSlice = createSlice({
     nextTab: (state) => {
       state.selectedTabIndex = (state.selectedTabIndex + 1) % state.tabCount;
       state.selectedIndex = 0;
-      state.gPressed = false;
     },
     prevTab: (state) => {
       state.selectedTabIndex = (state.selectedTabIndex - 1 + state.tabCount) % state.tabCount;
       state.selectedIndex = 0;
-      state.gPressed = false;
     },
     setTabCount: (state, action: PayloadAction<number>) => {
       state.tabCount = Math.max(1, action.payload);
@@ -92,7 +87,6 @@ export const uiSlice = createSlice({
     },
     toggleHelp: (state) => {
       state.showHelp = !state.showHelp;
-      state.gPressed = false;
     },
     setShowHelp: (state, action: PayloadAction<boolean>) => {
       state.showHelp = action.payload;
@@ -127,20 +121,3 @@ export const {
 } = uiSlice.actions;
 
 export default uiSlice.reducer;
-
-/**
- * Action creator that parses key input and returns the appropriate navigation action.
- * Returns null if the key is not a navigation key.
- */
-export function createNavigationAction(
-  input: string,
-  key: { tab: boolean; shift: boolean },
-  listLength: number
-) {
-  if (input === "?") return toggleHelp();
-  if (input === "l" || (key.tab && !key.shift)) return nextTab();
-  if (input === "h" || (key.tab && key.shift)) return prevTab();
-  if (input === "G") return jumpToEnd({ listLength });
-  if (input === "g") return pressG();
-  return null;
-}

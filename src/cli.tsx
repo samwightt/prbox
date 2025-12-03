@@ -1,15 +1,9 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { render, Box, Text, useStdout } from "ink";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { useAppSelector } from "./store/hooks";
-import {
-  useGetNotificationsQuery,
-  useMarkAsReadMutation,
-  useMarkAsUnreadMutation,
-  useMarkAsDoneMutation,
-  useUnsubscribeMutation,
-} from "./store/api/notificationsApi";
+import { useGetNotificationsQuery } from "./store/api/notificationsApi";
 import { useTabs, useFilteredNotifications, useVisibleNotifications } from "./hooks/useDisplayItems";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { ByeScreen } from "./components/ByeScreen";
@@ -29,42 +23,12 @@ function App() {
     isLoading: loading,
     isFetching: refreshing,
     error: queryError,
-    refetch: refresh,
   } = useGetNotificationsQuery(undefined, {
     pollingInterval: 10 * 60 * 1000, // 10 minutes
   });
 
   // Extract error message
   const error = queryError ? (queryError as { message?: string }).message ?? String(queryError) : null;
-
-  // Mutation hooks
-  const [markAsReadMutation] = useMarkAsReadMutation();
-  const [markAsUnreadMutation] = useMarkAsUnreadMutation();
-  const [markAsDoneMutation] = useMarkAsDoneMutation();
-  const [unsubscribeMutation] = useUnsubscribeMutation();
-
-  // Wrap mutations to match callback interface (id: string) => void
-  const markAsRead = useCallback((id: string) => {
-    markAsReadMutation(id);
-  }, [markAsReadMutation]);
-
-  const markAsUnread = useCallback((id: string) => {
-    markAsUnreadMutation(id);
-  }, [markAsUnreadMutation]);
-
-  const markAsDone = useCallback((id: string) => {
-    const notification = notifications.find((n) => n.id === id);
-    if (notification) {
-      markAsDoneMutation({ id, subjectId: notification.subjectId });
-    }
-  }, [markAsDoneMutation, notifications]);
-
-  const unsubscribe = useCallback((id: string) => {
-    const notification = notifications.find((n) => n.id === id);
-    if (notification) {
-      unsubscribeMutation({ id, subjectId: notification.subjectId });
-    }
-  }, [unsubscribeMutation, notifications]);
 
   // 2. Get tabs from notifications
   const tabs = useTabs(notifications);
@@ -80,11 +44,6 @@ function App() {
   const nav = useKeyboardNav({
     tabCount: tabs.length || 1,
     filteredNotifications,
-    onMarkRead: markAsRead,
-    onMarkUnread: markAsUnread,
-    onMarkDone: markAsDone,
-    onUnsubscribe: unsubscribe,
-    onRefresh: refresh,
   });
 
   // NO MORE useEffect to sync filteredNotifications!
