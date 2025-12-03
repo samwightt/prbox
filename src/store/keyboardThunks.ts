@@ -155,6 +155,7 @@ export const jumpToListEnd = createAsyncThunk<
 
 /**
  * Thunk for quitting the app.
+ * Sets exiting state - the App component watches this and calls ink's exit().
  */
 export const quitApp = createAsyncThunk<
   void,
@@ -162,7 +163,6 @@ export const quitApp = createAsyncThunk<
   { state: RootState; dispatch: AppDispatch }
 >("keyboard/quitApp", async (_, { dispatch }) => {
   dispatch(setExiting(true));
-  setTimeout(() => process.exit(0), 50);
 });
 
 /**

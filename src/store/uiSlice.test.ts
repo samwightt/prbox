@@ -21,7 +21,6 @@ const initialState: UiState = {
   keyBuffer: [],
   exiting: false,
   showHelp: false,
-  terminalHeight: 24,
 };
 
 const mockKey = {

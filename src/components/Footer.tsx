@@ -1,5 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
+import { useAppSelector } from "../store/hooks";
+import { selectEscapePressed, selectGPressed, selectSelectedTab } from "../store/selectors";
 
 const TAB_HELP: Record<string, string> = {
   "needs your review": "You or your team's review is showing as pending on these PRs.",
@@ -12,13 +14,10 @@ const TAB_HELP: Record<string, string> = {
   draft: "These PRs are still drafts.",
 };
 
-interface FooterProps {
-  gPressed: boolean;
-  escapePressed: boolean;
-  selectedTab: string | null;
-}
-
-export function Footer({ gPressed, escapePressed, selectedTab }: FooterProps) {
+export function Footer() {
+  const gPressed = useAppSelector(selectGPressed);
+  const escapePressed = useAppSelector(selectEscapePressed);
+  const selectedTab = useAppSelector(selectSelectedTab);
   const helpText = selectedTab ? TAB_HELP[selectedTab] : null;
 
   return (

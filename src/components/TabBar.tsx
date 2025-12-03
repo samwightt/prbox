@@ -1,13 +1,12 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { Tab } from "../store/selectors";
+import { useAppSelector } from "../store/hooks";
+import { selectTabs } from "../store/selectors";
 
-interface TabBarProps {
-  tabs: Tab[];
-  selectedIndex: number;
-}
+export function TabBar() {
+  const tabs = useAppSelector(selectTabs);
+  const selectedIndex = useAppSelector((state) => state.ui.selectedTabIndex);
 
-export function TabBar({ tabs, selectedIndex }: TabBarProps) {
   return (
     <Box gap={1}>
       {tabs.map((tab, idx) => {

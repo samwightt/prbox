@@ -13,7 +13,6 @@ export interface UiState {
   keyBuffer: KeyPress[];
   exiting: boolean;
   showHelp: boolean;
-  terminalHeight: number;
 }
 
 const initialState: UiState = {
@@ -22,7 +21,6 @@ const initialState: UiState = {
   keyBuffer: [],
   exiting: false,
   showHelp: false,
-  terminalHeight: 24,
 };
 
 export const uiSlice = createSlice({
@@ -50,9 +48,6 @@ export const uiSlice = createSlice({
     setSelectedTabIndex: (state, action: PayloadAction<number>) => {
       state.selectedTabIndex = action.payload;
       state.selectedIndex = 0;
-    },
-    setTerminalHeight: (state, action: PayloadAction<number>) => {
-      state.terminalHeight = action.payload;
     },
 
     // Key buffer for detecting sequences (gg, double-escape, etc.)
@@ -94,7 +89,6 @@ export const {
   jumpToStart,
   jumpToEnd,
   setSelectedTabIndex,
-  setTerminalHeight,
   pushKey,
   clearKeyBuffer,
   setExiting,

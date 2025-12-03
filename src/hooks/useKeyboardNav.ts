@@ -12,9 +12,12 @@ export function useKeyboardNav() {
   // Read from Redux for component render
   const ui = useAppSelector((state) => state.ui);
 
-  useInput((input, key) => {
-    dispatch(handleKeyboardInput({ input, key }));
-  });
+  useInput(
+    (input, key) => {
+      dispatch(handleKeyboardInput({ input, key }));
+    },
+    { isActive: !ui.exiting }
+  );
 
   return ui;
 }

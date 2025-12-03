@@ -1,57 +1,40 @@
 import React, { useEffect } from "react";
-import { render, Box, Text, useStdout } from "ink";
+import { Box, Text, useApp } from "ink";
+import { withFullScreen } from "fullscreen-ink";
 import { Provider } from "react-redux";
 import { store } from "./store";
-import { useAppSelector, useAppDispatch } from "./store/hooks";
+import { useAppSelector } from "./store/hooks";
 import { useGetNotificationsQuery } from "./store/api/notificationsApi";
-import { setTerminalHeight } from "./store/uiSlice";
 import {
-  selectNotifications,
   selectNotificationsLoading,
-  selectNotificationsRefreshing,
   selectNotificationsError,
-  selectTabs,
-  selectSelectedTab,
-  selectVisibleNotifications,
-  selectEscapePressed,
-  selectGPressed,
 } from "./store/selectors";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { ByeScreen } from "./components/ByeScreen";
 import { HelpScreen } from "./components/HelpScreen";
 import { LoadingScreen } from "./components/LoadingScreen";
-import { NotificationList } from "./components/NotificationList";
-import { TabBar } from "./components/TabBar";
-import { Footer } from "./components/Footer";
+import { MainLayout } from "./components/MainLayout";
 
 function App() {
-  const dispatch = useAppDispatch();
-  const { stdout } = useStdout();
-  const terminalHeight = stdout?.rows ?? 24;
-
-  // Sync terminal height to Redux
-  useEffect(() => {
-    dispatch(setTerminalHeight(terminalHeight));
-  }, [terminalHeight, dispatch]);
+  const app = useApp();
 
   // Trigger RTK Query fetch (data accessed via selectors)
   useGetNotificationsQuery(undefined, {
     pollingInterval: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Select all data from Redux
-  const notifications = useAppSelector(selectNotifications);
   const loading = useAppSelector(selectNotificationsLoading);
-  const refreshing = useAppSelector(selectNotificationsRefreshing);
   const error = useAppSelector(selectNotificationsError);
-  const tabs = useAppSelector(selectTabs);
-  const selectedTab = useAppSelector(selectSelectedTab);
-  const { visible: visibleNotifications, scrollOffset } = useAppSelector(selectVisibleNotifications);
-
-  // Handle keyboard navigation
   const ui = useKeyboardNav();
-  const escapePressed = useAppSelector(selectEscapePressed);
-  const gPressed = useAppSelector(selectGPressed);
+
+  // Exit the app properly when exiting state is set
+  useEffect(() => {
+    if (ui.exiting) {
+      // Small delay to show bye screen
+      const timer = setTimeout(() => app.exit(), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [ui.exiting, app]);
 
   if (ui.exiting) {
     return <ByeScreen />;
@@ -74,30 +57,7 @@ function App() {
     return <HelpScreen />;
   }
 
-  // Get repo name (just the first one for now)
-  const repoName = notifications[0]?.repo ?? "";
-
-  return (
-    <Box flexDirection="column" height={terminalHeight}>
-      {/* Header */}
-      <Text bold color="cyan">
-        Notifications ({notifications.length}){refreshing && <Text color="yellow"> Refreshing...</Text>}
-      </Text>
-      <Text dimColor>{"─".repeat(60)}</Text>
-
-      {/* Repo name */}
-      <Text bold color="blue">{repoName}</Text>
-
-      {/* Tab bar */}
-      <TabBar tabs={tabs} selectedIndex={ui.selectedTabIndex} />
-
-      {/* Scrollable content */}
-      <NotificationList notifications={visibleNotifications} selectedIndex={ui.selectedIndex} scrollOffset={scrollOffset} />
-
-      {/* Footer */}
-      <Footer gPressed={gPressed} escapePressed={escapePressed} selectedTab={selectedTab} />
-    </Box>
-  );
+  return <MainLayout />;
 }
 
 // Wrap with Redux Provider
@@ -109,4 +69,7 @@ function Root() {
   );
 }
 
-render(<Root />, { patchConsole: false });
+const app = withFullScreen(<Root />, { patchConsole: false });
+await app.start();
+await app.waitUntilExit();
+process.exit(0);
