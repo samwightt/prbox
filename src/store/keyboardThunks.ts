@@ -15,7 +15,7 @@ import {
   setGPressed,
 } from "./uiSlice";
 import { notificationsApi } from "./api/notificationsApi";
-import type { ParsedNotification } from "../types";
+import { selectFilteredNotifications, selectFilteredNotificationsLength } from "./selectors";
 
 /**
  * Thunk for marking a notification as read.
@@ -47,9 +47,10 @@ export const markNotificationAsUnread = createAsyncThunk<
  */
 export const markNotificationAsDone = createAsyncThunk<
   void,
-  { notificationId: string; subjectId: string; listLength: number },
+  { notificationId: string; subjectId: string },
   { state: RootState; dispatch: AppDispatch }
->("keyboard/markNotificationAsDone", async ({ notificationId, subjectId, listLength }, { dispatch }) => {
+>("keyboard/markNotificationAsDone", async ({ notificationId, subjectId }, { dispatch, getState }) => {
+  const listLength = selectFilteredNotificationsLength(getState());
   dispatch(notificationsApi.endpoints.markAsDone.initiate({ id: notificationId, subjectId }));
   dispatch(adjustSelectionAfterRemoval({ newListLength: listLength - 1 }));
 });
@@ -129,8 +130,6 @@ interface HandleKeyboardInputPayload {
     downArrow: boolean;
     upArrow: boolean;
   };
-  listLength: number;
-  filteredNotifications: ParsedNotification[];
 }
 
 /**
@@ -141,8 +140,11 @@ export const handleKeyboardInput = createAsyncThunk<
   void,
   HandleKeyboardInputPayload,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/handleInput", async ({ input, key, listLength, filteredNotifications }, { dispatch, getState }) => {
-  const state = getState().ui;
+>("keyboard/handleInput", async ({ input, key }, { dispatch, getState }) => {
+  const rootState = getState();
+  const state = rootState.ui;
+  const filteredNotifications = selectFilteredNotifications(rootState);
+  const listLength = filteredNotifications.length;
 
   if (state.exiting) return;
 
@@ -244,7 +246,6 @@ export const handleKeyboardInput = createAsyncThunk<
       dispatch(markNotificationAsDone({
         notificationId: selected.id,
         subjectId: selected.subjectId,
-        listLength: filteredNotifications.length,
       }));
     }
     return;

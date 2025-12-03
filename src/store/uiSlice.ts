@@ -9,6 +9,7 @@ export interface UiState {
   exiting: boolean;
   showHelp: boolean;
   tabCount: number;
+  terminalHeight: number;
 }
 
 const initialState: UiState = {
@@ -19,6 +20,7 @@ const initialState: UiState = {
   exiting: false,
   showHelp: false,
   tabCount: 1,
+  terminalHeight: 24,
 };
 
 export const uiSlice = createSlice({
@@ -60,6 +62,9 @@ export const uiSlice = createSlice({
       if (state.selectedTabIndex >= state.tabCount) {
         state.selectedTabIndex = state.tabCount - 1;
       }
+    },
+    setTerminalHeight: (state, action: PayloadAction<number>) => {
+      state.terminalHeight = action.payload;
     },
 
     // Vim motion states
@@ -111,6 +116,7 @@ export const {
   nextTab,
   prevTab,
   setTabCount,
+  setTerminalHeight,
   setGPressed,
   pressG,
   setEscapePressed,

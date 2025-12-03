@@ -27,6 +27,7 @@ const initialState: UiState = {
   exiting: false,
   showHelp: false,
   tabCount: 1,
+  terminalHeight: 24,
 };
 
 describe("uiSlice", () => {

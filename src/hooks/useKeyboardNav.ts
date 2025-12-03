@@ -3,21 +3,16 @@ import { useInput } from "ink";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setTabCount } from "../store/uiSlice";
 import { handleKeyboardInput } from "../store/keyboardThunks";
-import type { ParsedNotification } from "../types";
 
 interface UseKeyboardNavOptions {
   tabCount: number;
-  filteredNotifications: ParsedNotification[];
 }
 
 /**
  * Manages keyboard navigation via Redux.
  * Dispatches all key input to the handleKeyboardInput thunk.
  */
-export function useKeyboardNav({
-  tabCount,
-  filteredNotifications,
-}: UseKeyboardNavOptions) {
+export function useKeyboardNav({ tabCount }: UseKeyboardNavOptions) {
   const dispatch = useAppDispatch();
 
   // Read from Redux for component render
@@ -41,8 +36,6 @@ export function useKeyboardNav({
           downArrow: key.downArrow,
           upArrow: key.upArrow,
         },
-        listLength: filteredNotifications.length,
-        filteredNotifications,
       })
     );
   });

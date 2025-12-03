@@ -1,10 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { render, Box, Text, useStdout } from "ink";
 import { Provider } from "react-redux";
 import { store } from "./store";
-import { useAppSelector } from "./store/hooks";
+import { useAppSelector, useAppDispatch } from "./store/hooks";
 import { useGetNotificationsQuery } from "./store/api/notificationsApi";
-import { useTabs, useFilteredNotifications, useVisibleNotifications } from "./hooks/useDisplayItems";
+import { setTerminalHeight } from "./store/uiSlice";
+import {
+  selectNotifications,
+  selectNotificationsLoading,
+  selectNotificationsRefreshing,
+  selectNotificationsError,
+  selectTabs,
+  selectTabCount,
+  selectSelectedTab,
+  selectFilteredNotifications,
+  selectVisibleNotifications,
+} from "./store/selectors";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { ByeScreen } from "./components/ByeScreen";
 import { HelpScreen } from "./components/HelpScreen";
@@ -14,46 +25,33 @@ import { TabBar } from "./components/TabBar";
 import { Footer } from "./components/Footer";
 
 function App() {
+  const dispatch = useAppDispatch();
   const { stdout } = useStdout();
   const terminalHeight = stdout?.rows ?? 24;
 
-  // 1. Fetch notifications via RTK Query
-  const {
-    data: notifications = [],
-    isLoading: loading,
-    isFetching: refreshing,
-    error: queryError,
-  } = useGetNotificationsQuery(undefined, {
+  // Sync terminal height to Redux
+  useEffect(() => {
+    dispatch(setTerminalHeight(terminalHeight));
+  }, [terminalHeight, dispatch]);
+
+  // Trigger RTK Query fetch (data accessed via selectors)
+  useGetNotificationsQuery(undefined, {
     pollingInterval: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Extract error message
-  const error = queryError ? (queryError as { message?: string }).message ?? String(queryError) : null;
+  // Select all data from Redux
+  const notifications = useAppSelector(selectNotifications);
+  const loading = useAppSelector(selectNotificationsLoading);
+  const refreshing = useAppSelector(selectNotificationsRefreshing);
+  const error = useAppSelector(selectNotificationsError);
+  const tabs = useAppSelector(selectTabs);
+  const tabCount = useAppSelector(selectTabCount);
+  const selectedTab = useAppSelector(selectSelectedTab);
+  const filteredNotifications = useAppSelector(selectFilteredNotifications);
+  const { visible: visibleNotifications, scrollOffset } = useAppSelector(selectVisibleNotifications);
 
-  // 2. Get tabs from notifications
-  const tabs = useTabs(notifications);
-
-  // 3. Get selectedTabIndex from Redux FIRST (needed to compute filteredNotifications)
-  const selectedTabIndex = useAppSelector((state) => state.ui.selectedTabIndex);
-  const selectedTab = tabs[selectedTabIndex]?.reason ?? null;
-
-  // 4. Filter notifications based on selected tab
-  const filteredNotifications = useFilteredNotifications(notifications, selectedTab);
-
-  // 5. Handle keyboard navigation - pass filteredNotifications directly!
-  const nav = useKeyboardNav({
-    tabCount: tabs.length || 1,
-    filteredNotifications,
-  });
-
-  // NO MORE useEffect to sync filteredNotifications!
-
-  // 6. Calculate visible notifications
-  const { visible: visibleNotifications, scrollOffset } = useVisibleNotifications(
-    filteredNotifications,
-    nav.selectedIndex,
-    terminalHeight
-  );
+  // Handle keyboard navigation
+  const nav = useKeyboardNav({ tabCount });
 
   if (nav.exiting) {
     return <ByeScreen />;
