@@ -213,6 +213,21 @@ export class GhCliError extends Error {
   }
 }
 
+/**
+ * Execute a GraphQL mutation via the gh CLI.
+ * Fire-and-forget for now - doesn't wait for completion.
+ */
+function executeGraphQLMutation(
+  mutation: string,
+  variables: Record<string, string>
+): void {
+  const args = ["gh", "api", "graphql", "-f", `query=${mutation}`];
+  for (const [key, value] of Object.entries(variables)) {
+    args.push("-f", `${key}=${value}`);
+  }
+  Bun.spawn(args);
+}
+
 async function checkGhCliAndAuth(): Promise<{ login: string }> {
   // Check if gh CLI is installed
   try {
@@ -517,42 +532,30 @@ export function useNotifications() {
   };
 
   const markAsRead = (id: string) => {
-    const mutation = `
-      mutation($id: ID!) {
-        markNotificationAsRead(input: { id: $id }) {
-          success
-        }
-      }
-    `;
-    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${id}`]);
+    executeGraphQLMutation(
+      `mutation($id: ID!) { markNotificationAsRead(input: { id: $id }) { success } }`,
+      { id }
+    );
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, unread: false } : n))
     );
   };
 
   const markAsUnread = (id: string) => {
-    const mutation = `
-      mutation($id: ID!) {
-        markNotificationsAsUnread(input: { ids: [$id] }) {
-          success
-        }
-      }
-    `;
-    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${id}`]);
+    executeGraphQLMutation(
+      `mutation($id: ID!) { markNotificationsAsUnread(input: { ids: [$id] }) { success } }`,
+      { id }
+    );
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, unread: true } : n))
     );
   };
 
   const markAsDone = async (id: string) => {
-    const mutation = `
-      mutation($id: ID!) {
-        markNotificationAsDone(input: { id: $id }) {
-          success
-        }
-      }
-    `;
-    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${id}`]);
+    executeGraphQLMutation(
+      `mutation($id: ID!) { markNotificationAsDone(input: { id: $id }) { success } }`,
+      { id }
+    );
 
     // Record this done timestamp in history
     const seenData = await loadSeenNotifications();
@@ -580,15 +583,11 @@ export function useNotifications() {
     const notification = notifications.find((n) => n.id === id);
     if (!notification) return;
 
-    const mutation = `
-      mutation($id: ID!) {
-        unsubscribeFromNotifications(input: { ids: [$id] }) {
-          success
-        }
-      }
-    `;
     // Use the PR's subjectId, not the notification thread ID
-    Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `id=${notification.subjectId}`]);
+    executeGraphQLMutation(
+      `mutation($id: ID!) { unsubscribeFromNotifications(input: { ids: [$id] }) { success } }`,
+      { id: notification.subjectId }
+    );
 
     // Mark as unsubscribed in seen data
     const seenData = await loadSeenNotifications();
