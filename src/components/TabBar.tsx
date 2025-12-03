@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { Tab } from "../hooks/useDisplayItems";
+import type { Tab } from "../store/selectors";
 
 interface TabBarProps {
   tabs: Tab[];
