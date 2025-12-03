@@ -4,7 +4,7 @@ import { withFullScreen } from "fullscreen-ink";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { useAppSelector } from "./store/hooks";
-import { useGetNotificationsQuery } from "./store/api/notificationsApi";
+import { useGetNotificationsQuery, flushPendingMutations } from "./store/api/notificationsApi";
 import {
   selectNotificationsLoading,
   selectNotificationsError,
@@ -30,9 +30,10 @@ function App() {
   // Exit the app properly when exiting state is set
   useEffect(() => {
     if (ui.exiting) {
-      // Small delay to show bye screen
-      const timer = setTimeout(() => app.exit(), 50);
-      return () => clearTimeout(timer);
+      // Flush any pending mutations and wait for them before exiting
+      flushPendingMutations().then(() => {
+        app.exit();
+      });
     }
   }, [ui.exiting, app]);
 

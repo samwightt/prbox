@@ -141,20 +141,65 @@ async function checkGhCliAndAuth(): Promise<{ login: string }> {
   return { login: githubHosts[0].login };
 }
 
+// All batch executors register themselves here
+const allBatchExecutors: { flush: () => Promise<number> | null }[] = [];
+
 /**
- * Execute a GraphQL mutation via the gh CLI.
- * Fire-and-forget - doesn't wait for completion.
+ * Debounced batch executor for GraphQL mutations.
+ * Collects IDs and fires a single batched mutation after a delay.
  */
-function executeGraphQLMutation(
-  mutation: string,
-  variables: Record<string, string>
-): void {
-  const args = ["gh", "api", "graphql", "-f", `query=${mutation}`];
-  for (const [key, value] of Object.entries(variables)) {
-    args.push("-f", `${key}=${value}`);
-  }
-  Bun.spawn(args);
+function createBatchedMutationExecutor(
+  mutationTemplate: (ids: string[]) => string,
+  debounceMs = 5000
+) {
+  let pendingIds: string[] = [];
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const flush = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (pendingIds.length === 0) return null;
+
+    const ids = pendingIds;
+    pendingIds = [];
+
+    const mutation = mutationTemplate(ids);
+    const proc = Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`]);
+    return proc.exited;
+  };
+
+  const enqueue = (id: string) => {
+    pendingIds.push(id);
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(flush, debounceMs);
+  };
+
+  enqueue.flush = flush;
+
+  // Auto-register
+  allBatchExecutors.push({ flush });
+
+  return enqueue;
 }
+
+// Batched mutation executors for each operation type
+const batchMarkAsRead = createBatchedMutationExecutor(
+  (ids) => `mutation { markNotificationsAsRead(input: { ids: ${JSON.stringify(ids)} }) { success } }`
+);
+
+const batchMarkAsUnread = createBatchedMutationExecutor(
+  (ids) => `mutation { markNotificationsAsUnread(input: { ids: ${JSON.stringify(ids)} }) { success } }`
+);
+
+const batchMarkAsDone = createBatchedMutationExecutor(
+  (ids) => `mutation { markNotificationsAsDone(input: { ids: ${JSON.stringify(ids)} }) { success } }`
+);
+
+const batchUnsubscribe = createBatchedMutationExecutor(
+  (ids) => `mutation { unsubscribeFromNotifications(input: { ids: ${JSON.stringify(ids)} }) { success } }`
+);
 
 export const notificationsApi = createApi({
   reducerPath: "notificationsApi",
@@ -208,11 +253,7 @@ export const notificationsApi = createApi({
 
     markAsRead: builder.mutation<void, string>({
       queryFn: async (id) => {
-        // Fire and forget
-        executeGraphQLMutation(
-          `mutation($id: ID!) { markNotificationAsRead(input: { id: $id }) { success } }`,
-          { id }
-        );
+        batchMarkAsRead(id);
         return { data: undefined };
       },
       onQueryStarted: async (id, { dispatch, queryFulfilled }) => {
@@ -235,11 +276,7 @@ export const notificationsApi = createApi({
 
     markAsUnread: builder.mutation<void, string>({
       queryFn: async (id) => {
-        // Fire and forget
-        executeGraphQLMutation(
-          `mutation($id: ID!) { markNotificationsAsUnread(input: { ids: [$id] }) { success } }`,
-          { id }
-        );
+        batchMarkAsUnread(id);
         return { data: undefined };
       },
       onQueryStarted: async (id, { dispatch, queryFulfilled }) => {
@@ -262,11 +299,7 @@ export const notificationsApi = createApi({
 
     markAsDone: builder.mutation<void, { id: string; subjectId: string }>({
       queryFn: async ({ id }) => {
-        // Fire and forget
-        executeGraphQLMutation(
-          `mutation($id: ID!) { markNotificationAsDone(input: { id: $id }) { success } }`,
-          { id }
-        );
+        batchMarkAsDone(id);
         return { data: undefined };
       },
       onQueryStarted: async ({ id }, { dispatch, queryFulfilled }) => {
@@ -289,11 +322,8 @@ export const notificationsApi = createApi({
 
     unsubscribe: builder.mutation<void, { id: string; subjectId: string }>({
       queryFn: async ({ subjectId }) => {
-        // Fire and forget - use subjectId (PR's GraphQL ID) for unsubscribe
-        executeGraphQLMutation(
-          `mutation($id: ID!) { unsubscribeFromNotifications(input: { ids: [$id] }) { success } }`,
-          { id: subjectId }
-        );
+        // Use subjectId (PR's GraphQL ID) for unsubscribe
+        batchUnsubscribe(subjectId);
         return { data: undefined };
       },
       onQueryStarted: async ({ id }, { dispatch, queryFulfilled }) => {
@@ -323,3 +353,12 @@ export const {
   useMarkAsDoneMutation,
   useUnsubscribeMutation,
 } = notificationsApi;
+
+/** Flush all pending batched mutations and wait for them to complete */
+export async function flushPendingMutations(): Promise<void> {
+  const promises = allBatchExecutors
+    .map((e) => e.flush())
+    .filter((p): p is Promise<number> => p !== null);
+
+  await Promise.all(promises);
+}
