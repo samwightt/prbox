@@ -343,6 +343,31 @@ export const notificationsApi = createApi({
         }
       },
     }),
+
+    approvePullRequest: builder.mutation<void, { id: string; subjectId: string }>({
+      queryFn: async ({ subjectId }) => {
+        // Fire and forget - approve the PR
+        const mutation = `mutation($prId: ID!) { addPullRequestReview(input: { pullRequestId: $prId, event: APPROVE }) { clientMutationId } }`;
+        Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `prId=${subjectId}`]);
+        return { data: undefined };
+      },
+      onQueryStarted: async ({ id }, { dispatch, queryFulfilled }) => {
+        // Optimistic update - prefix title with [approved]
+        const patchResult = dispatch(
+          notificationsApi.util.updateQueryData("getNotifications", undefined, (draft) => {
+            const notification = draft.find((n) => n.id === id);
+            if (notification && !notification.cleanTitle.startsWith("[approved]")) {
+              notification.cleanTitle = `[approved] ${notification.cleanTitle}`;
+            }
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
+    }),
   }),
 });
 
@@ -352,6 +377,7 @@ export const {
   useMarkAsUnreadMutation,
   useMarkAsDoneMutation,
   useUnsubscribeMutation,
+  useApprovePullRequestMutation,
 } = notificationsApi;
 
 /** Flush all pending batched mutations and wait for them to complete */

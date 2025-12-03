@@ -116,6 +116,21 @@ export const unsubscribeFromNotification = createAsyncThunk<
 });
 
 /**
+ * Thunk for approving a pull request.
+ * Calls the RTK Query mutation which handles the optimistic update.
+ */
+export const approvePullRequest = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("keyboard/approvePullRequest", async (_, { dispatch, getState }) => {
+  const selected = selectSelectedNotification(getState());
+  if (selected) {
+    dispatch(notificationsApi.endpoints.approvePullRequest.initiate({ id: selected.id, subjectId: selected.subjectId }));
+  }
+});
+
+/**
  * Thunk for refreshing notifications.
  * Invalidates the RTK Query cache to trigger a refetch.
  */
@@ -230,6 +245,9 @@ const keyBindings: KeyBinding[] = [
   // gg -> jump to start
   { match: (b) => bufferEndsWith(b, ["g", "g"]), action: () => jumpToStart() },
 
+  // AAA -> approve PR
+  { match: (b) => bufferEndsWith(b, ["A", "A", "A"]), action: approvePullRequest },
+
   // Tab navigation
   { match: (b) => lastKey(b)?.input === "l" || !!(lastKey(b)?.key.tab && !lastKey(b)?.key.shift), action: nextTab },
   { match: (b) => lastKey(b)?.input === "h" || !!(lastKey(b)?.key.tab && lastKey(b)?.key.shift), action: prevTab },
@@ -284,6 +302,7 @@ export const helpSections: HelpSection[] = [
       { key: "M", description: "Mark as unread" },
       { key: "d/y", description: "Mark as done" },
       { key: "U", description: "Unsubscribe" },
+      { key: "AAA", description: "Approve PR" },
       { key: "R", description: "Refresh" },
     ],
   },
