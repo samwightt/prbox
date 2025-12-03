@@ -197,42 +197,6 @@ export const selectSelectedNotification = createSelector(
 );
 
 /**
- * Select visible notifications based on viewport and selection.
- * Returns both the visible slice and the scroll offset for proper selection highlighting.
- * Takes terminalHeight as a parameter since it comes from useScreenSize hook.
- */
-export const makeSelectVisibleNotifications = (terminalHeight: number) =>
-  createSelector(
-    selectFilteredNotifications,
-    (state: RootState) => state.ui.selectedIndex,
-    (notifications, selectedIndex): { visible: NotificationWithTab[]; scrollOffset: number } => {
-      // Account for header (2 lines), repo name (1 line), tabs (1 line), footer (2 lines) = 6 lines
-      // Each notification is now 2 lines tall
-      const linesForChrome = 6;
-      const linesPerItem = 2;
-      const viewportHeight = Math.floor((terminalHeight - linesForChrome) / linesPerItem);
-
-      if (notifications.length === 0) return { visible: [], scrollOffset: 0 };
-
-      const maxVisible = Math.max(1, viewportHeight);
-      const halfVisible = Math.floor(maxVisible / 2);
-
-      let scrollOffset = 0;
-      if (selectedIndex > halfVisible) {
-        scrollOffset = Math.min(
-          selectedIndex - halfVisible,
-          Math.max(0, notifications.length - maxVisible)
-        );
-      }
-
-      return {
-        visible: notifications.slice(scrollOffset, scrollOffset + maxVisible),
-        scrollOffset,
-      };
-    }
-  );
-
-/**
  * Select whether escape was pressed (for "press again to quit" UI hint).
  */
 export const selectEscapePressed = createSelector(

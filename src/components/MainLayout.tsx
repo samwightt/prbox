@@ -18,16 +18,18 @@ export function MainLayout() {
   return (
     <Box flexDirection="column" width="100%" height="100%">
       {/* Header */}
-      <Text bold color="cyan">
-        Notifications ({notifications.length}){refreshing && <Text color="yellow"> Refreshing...</Text>}
-      </Text>
-      <Text dimColor>{"─".repeat(60)}</Text>
+      <Box flexDirection="column" flexShrink={0}>
+        <Text bold color="cyan">
+          Notifications ({notifications.length}){refreshing && <Text color="yellow"> Refreshing...</Text>}
+        </Text>
+        <Text dimColor>{"─".repeat(60)}</Text>
 
-      {/* Repo name */}
-      <Text bold color="blue">{repoName}</Text>
+        {/* Repo name */}
+        <Text bold color="blue">{repoName}</Text>
 
-      {/* Tab bar */}
-      <TabBar />
+        {/* Tab bar */}
+        <TabBar />
+      </Box>
 
       {/* Scrollable content */}
       <NotificationList />

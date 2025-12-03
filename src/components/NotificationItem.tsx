@@ -66,7 +66,7 @@ export function NotificationItem({ notification, isSelected }: NotificationItemP
   return (
     <Box flexDirection="column">
       {/* Line 1: bullet + title + author + PR number + branch */}
-      <Text>
+      <Text wrap="truncate">
         {bullet}
         <Text bold={!isRead} color={isSelected ? "white" : isRead ? "gray" : notification.isClosed ? "red" : notification.reason === "merged" ? "magenta" : undefined}>
           {truncate(notification.cleanTitle, 50)}

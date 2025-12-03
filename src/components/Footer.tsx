@@ -21,16 +21,16 @@ export function Footer() {
   const helpText = selectedTab ? TAB_HELP[selectedTab] : null;
 
   return (
-    <>
+    <Box flexDirection="column" flexShrink={0}>
       <Text dimColor>{"─".repeat(60)}</Text>
-      {helpText && <Text dimColor italic>{helpText}</Text>}
+      <Text dimColor italic wrap="truncate">{helpText ?? " "}</Text>
       <Box justifyContent="space-between">
-        <Text dimColor>tab/shift+tab switch • ↑/↓ nav • enter open • m/M read/unread • d/y done • ? help</Text>
-        <Box>
+        <Text dimColor wrap="truncate">tab/shift+tab switch • ↑/↓ nav • enter open • m/M read/unread • d/y done • ? help</Text>
+        <Box flexShrink={0}>
           {gPressed && <Text color="yellow">g</Text>}
           {escapePressed && <Text color="yellow">Press Esc again to quit</Text>}
         </Box>
       </Box>
-    </>
+    </Box>
   );
 }
