@@ -118,7 +118,7 @@ export function useFilteredNotifications(
       }
 
       // Finally sort by date (newest first)
-      return b.updatedAt.getTime() - a.updatedAt.getTime();
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
   }, [notifications, selectedTab]);
 }

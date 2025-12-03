@@ -2,8 +2,8 @@ import React from "react";
 import { Box, Text } from "ink";
 import type { ParsedNotification, StatusCheckState } from "../types";
 
-function shortTimeAgo(date: Date): string {
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+function shortTimeAgo(dateString: string): string {
+  const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
   if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m`;
@@ -77,7 +77,7 @@ export function NotificationItem({ notification, isSelected }: NotificationItemP
         )}
         <Text dimColor italic>
           {" "}{shortTimeAgo(notification.updatedAt)}
-          {Date.now() - notification.createdAt.getTime() >= 14 * 24 * 60 * 60 * 1000 && (
+          {Date.now() - new Date(notification.createdAt).getTime() >= 14 * 24 * 60 * 60 * 1000 && (
             <Text>, created {shortTimeAgo(notification.createdAt)}</Text>
           )}
         </Text>

@@ -13,8 +13,10 @@ export interface ParsedNotification {
   /** GraphQL node ID of the subscribable subject (PR/Issue) for unsubscribe */
   subjectId: string;
   unread: boolean;
-  updatedAt: Date;
-  createdAt: Date;
+  /** ISO 8601 date string */
+  updatedAt: string;
+  /** ISO 8601 date string */
+  createdAt: string;
   /** Who the review is requested from (team slug or username) - only set for needs_review */
   reviewRequestedFrom: string | null;
   /** Status check state for the PR */
