@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import React, { useEffect } from "react";
 import { Box, Text, useApp } from "ink";
 import { withFullScreen } from "fullscreen-ink";

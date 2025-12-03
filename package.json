@@ -1,10 +1,30 @@
 {
-  "name": "github-scripts",
-  "module": "index.ts",
+  "name": "prbox",
+  "version": "0.1.1",
+  "description": "A terminal UI for triaging GitHub notifications",
+  "license": "MIT",
   "type": "module",
-  "private": true,
+  "bin": {
+    "prbox": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "start": "bun src/cli.tsx"
+    "start": "bun src/cli.tsx",
+    "build": "bun build ./src/cli.tsx --outfile dist/cli.js --target node"
+  },
+  "keywords": [
+    "github",
+    "notifications",
+    "cli",
+    "terminal",
+    "tui",
+    "inbox",
+    "triage"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -16,9 +36,11 @@
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.0",
     "date-fns": "^4.1.0",
+    "execa": "^9.6.1",
     "fullscreen-ink": "^0.1.0",
     "ink": "^6.5.1",
     "react": "^19.2.0",
+    "react-devtools-core": "^7.0.1",
     "react-redux": "^9.2.0"
   }
 }

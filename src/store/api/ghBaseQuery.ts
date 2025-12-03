@@ -1,4 +1,5 @@
 import type { BaseQueryFn } from "@reduxjs/toolkit/query";
+import { $ } from "execa";
 
 export interface GhGraphQLArgs {
   query: string;
@@ -34,7 +35,8 @@ export const ghGraphQLBaseQuery: BaseQueryFn<
     }
 
     // Execute GraphQL query via gh CLI
-    const result = await Bun.$`gh api graphql -f query=${query} ${varArgs}`.json();
+    const { stdout } = await $`gh api graphql -f query=${query} ${varArgs}`;
+    const result = JSON.parse(stdout);
 
     // Check for GraphQL errors in the response
     if (result.errors?.length) {

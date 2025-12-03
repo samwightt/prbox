@@ -1,4 +1,5 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
+import { $ } from "execa";
 import { ghGraphQLBaseQuery } from "./ghBaseQuery";
 import { parseNotifications, type GraphQLResponse } from "./notificationParser";
 import { loadSeenNotifications } from "./seenStorage";
@@ -97,7 +98,7 @@ query($login: String!) {
 async function checkGhCliAndAuth(): Promise<{ login: string }> {
   // Check if gh CLI is installed
   try {
-    await Bun.$`which gh`.quiet();
+    await $`which gh`;
   } catch {
     throw new Error(
       "GitHub CLI (gh) is not installed.\n\n" +
@@ -111,7 +112,8 @@ async function checkGhCliAndAuth(): Promise<{ login: string }> {
   // Check auth status and scopes
   let authStatus: GhAuthStatus;
   try {
-    authStatus = await Bun.$`gh auth status --json hosts`.json() as GhAuthStatus;
+    const { stdout } = await $`gh auth status --json hosts`;
+    authStatus = JSON.parse(stdout) as GhAuthStatus;
   } catch {
     throw new Error(
       "Not logged in to GitHub CLI.\n\n" +
