@@ -183,6 +183,20 @@ export const selectFilteredNotificationsLength = createSelector(
 );
 
 /**
+ * Select the currently selected notification.
+ * If the selected index is out of bounds, uses the closest previous valid index.
+ */
+export const selectSelectedNotification = createSelector(
+  selectFilteredNotifications,
+  (state: RootState) => state.ui.selectedIndex,
+  (notifications, selectedIndex): NotificationWithTab | null => {
+    if (notifications.length === 0) return null;
+    const clampedIndex = Math.min(selectedIndex, notifications.length - 1);
+    return notifications[clampedIndex] ?? null;
+  }
+);
+
+/**
  * Select visible notifications based on viewport and selection.
  * Returns both the visible slice and the scroll offset for proper selection highlighting.
  */
@@ -215,4 +229,20 @@ export const selectVisibleNotifications = createSelector(
       scrollOffset,
     };
   }
+);
+
+/**
+ * Select whether escape was pressed (for "press again to quit" UI hint).
+ */
+export const selectEscapePressed = createSelector(
+  (state: RootState) => state.ui.keyBuffer,
+  (keyBuffer) => keyBuffer[keyBuffer.length - 1]?.key.escape ?? false
+);
+
+/**
+ * Select whether 'g' was pressed (for "gg" motion UI hint).
+ */
+export const selectGPressed = createSelector(
+  (state: RootState) => state.ui.keyBuffer,
+  (keyBuffer) => keyBuffer[keyBuffer.length - 1]?.input === "g"
 );

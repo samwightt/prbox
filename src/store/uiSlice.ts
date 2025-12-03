@@ -1,11 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import type { Key } from "ink";
+
+export interface KeyPress {
+  input: string;
+  key: Key;
+}
 
 export interface UiState {
   selectedIndex: number;
   selectedTabIndex: number;
-  escapePressed: boolean;
-  gPressed: boolean;
+  keyBuffer: KeyPress[];
   exiting: boolean;
   showHelp: boolean;
   terminalHeight: number;
@@ -14,8 +19,7 @@ export interface UiState {
 const initialState: UiState = {
   selectedIndex: 0,
   selectedTabIndex: 0,
-  escapePressed: false,
-  gPressed: false,
+  keyBuffer: [],
   exiting: false,
   showHelp: false,
   terminalHeight: 24,
@@ -51,23 +55,16 @@ export const uiSlice = createSlice({
       state.terminalHeight = action.payload;
     },
 
-    // Vim motion states
-    setGPressed: (state, action: PayloadAction<boolean>) => {
-      state.gPressed = action.payload;
-    },
-    // Handle 'g' key - if gPressed, jump to start (gg), otherwise set gPressed
-    pressG: (state) => {
-      if (state.gPressed) {
-        state.selectedIndex = 0;
-        state.gPressed = false;
-      } else {
-        state.gPressed = true;
+    // Key buffer for detecting sequences (gg, double-escape, etc.)
+    pushKey: (state, action: PayloadAction<KeyPress>) => {
+      state.keyBuffer.push(action.payload);
+      // Keep buffer small (max 5 keys)
+      if (state.keyBuffer.length > 5) {
+        state.keyBuffer.shift();
       }
     },
-
-    // Escape handling
-    setEscapePressed: (state, action: PayloadAction<boolean>) => {
-      state.escapePressed = action.payload;
+    clearKeyBuffer: (state) => {
+      state.keyBuffer = [];
     },
 
     // Exit and help
@@ -98,9 +95,8 @@ export const {
   jumpToEnd,
   setSelectedTabIndex,
   setTerminalHeight,
-  setGPressed,
-  pressG,
-  setEscapePressed,
+  pushKey,
+  clearKeyBuffer,
   setExiting,
   toggleHelp,
   setShowHelp,

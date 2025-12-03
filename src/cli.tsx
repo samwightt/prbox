@@ -13,6 +13,8 @@ import {
   selectTabs,
   selectSelectedTab,
   selectVisibleNotifications,
+  selectEscapePressed,
+  selectGPressed,
 } from "./store/selectors";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
 import { ByeScreen } from "./components/ByeScreen";
@@ -47,9 +49,11 @@ function App() {
   const { visible: visibleNotifications, scrollOffset } = useAppSelector(selectVisibleNotifications);
 
   // Handle keyboard navigation
-  const nav = useKeyboardNav();
+  const ui = useKeyboardNav();
+  const escapePressed = useAppSelector(selectEscapePressed);
+  const gPressed = useAppSelector(selectGPressed);
 
-  if (nav.exiting) {
+  if (ui.exiting) {
     return <ByeScreen />;
   }
 
@@ -66,7 +70,7 @@ function App() {
     );
   }
 
-  if (nav.showHelp) {
+  if (ui.showHelp) {
     return <HelpScreen />;
   }
 
@@ -85,13 +89,13 @@ function App() {
       <Text bold color="blue">{repoName}</Text>
 
       {/* Tab bar */}
-      <TabBar tabs={tabs} selectedIndex={nav.selectedTabIndex} />
+      <TabBar tabs={tabs} selectedIndex={ui.selectedTabIndex} />
 
       {/* Scrollable content */}
-      <NotificationList notifications={visibleNotifications} selectedIndex={nav.selectedIndex} scrollOffset={scrollOffset} />
+      <NotificationList notifications={visibleNotifications} selectedIndex={ui.selectedIndex} scrollOffset={scrollOffset} />
 
       {/* Footer */}
-      <Footer gPressed={nav.gPressed} escapePressed={nav.escapePressed} selectedTab={selectedTab} />
+      <Footer gPressed={gPressed} escapePressed={escapePressed} selectedTab={selectedTab} />
     </Box>
   );
 }

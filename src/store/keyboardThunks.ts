@@ -1,20 +1,26 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { Key } from "ink";
 import type { RootState, AppDispatch } from "./index";
 import {
   toggleHelp,
   setSelectedTabIndex,
   jumpToEnd,
-  pressG,
+  jumpToStart,
   adjustSelectionAfterRemoval,
   moveSelectionUp,
   moveSelectionDown,
-  setEscapePressed,
   setExiting,
   setShowHelp,
-  setGPressed,
+  pushKey,
+  clearKeyBuffer,
 } from "./uiSlice";
+
+// Timeout ID for auto-clearing the key buffer after inactivity
+let bufferClearTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const BUFFER_TIMEOUT_MS = 2000;
 import { notificationsApi } from "./api/notificationsApi";
-import { selectFilteredNotifications, selectFilteredNotificationsLength, selectTabCount } from "./selectors";
+import { selectFilteredNotificationsLength, selectSelectedNotification, selectTabCount } from "./selectors";
 
 /**
  * Thunk for navigating to the next tab.
@@ -48,26 +54,32 @@ export const prevTab = createAsyncThunk<
 
 /**
  * Thunk for marking a notification as read.
- * Calls the RTK Query mutation which handles the optimistic update.
+ * Only marks if the selected notification is unread.
  */
 export const markNotificationAsRead = createAsyncThunk<
   void,
-  { notificationId: string },
+  void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/markNotificationAsRead", async ({ notificationId }, { dispatch }) => {
-  dispatch(notificationsApi.endpoints.markAsRead.initiate(notificationId));
+>("keyboard/markNotificationAsRead", async (_, { dispatch, getState }) => {
+  const selected = selectSelectedNotification(getState());
+  if (selected?.unread) {
+    dispatch(notificationsApi.endpoints.markAsRead.initiate(selected.id));
+  }
 });
 
 /**
  * Thunk for marking a notification as unread.
- * Calls the RTK Query mutation which handles the optimistic update.
+ * Only marks if the selected notification is already read.
  */
 export const markNotificationAsUnread = createAsyncThunk<
   void,
-  { notificationId: string },
+  void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/markNotificationAsUnread", async ({ notificationId }, { dispatch }) => {
-  dispatch(notificationsApi.endpoints.markAsUnread.initiate(notificationId));
+>("keyboard/markNotificationAsUnread", async (_, { dispatch, getState }) => {
+  const selected = selectSelectedNotification(getState());
+  if (selected && !selected.unread) {
+    dispatch(notificationsApi.endpoints.markAsUnread.initiate(selected.id));
+  }
 });
 
 /**
@@ -76,12 +88,16 @@ export const markNotificationAsUnread = createAsyncThunk<
  */
 export const markNotificationAsDone = createAsyncThunk<
   void,
-  { notificationId: string; subjectId: string },
+  void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/markNotificationAsDone", async ({ notificationId, subjectId }, { dispatch, getState }) => {
-  const listLength = selectFilteredNotificationsLength(getState());
-  dispatch(notificationsApi.endpoints.markAsDone.initiate({ id: notificationId, subjectId }));
-  dispatch(adjustSelectionAfterRemoval({ newListLength: listLength - 1 }));
+>("keyboard/markNotificationAsDone", async (_, { dispatch, getState }) => {
+  const state = getState();
+  const selected = selectSelectedNotification(state);
+  if (selected) {
+    const listLength = selectFilteredNotificationsLength(state);
+    dispatch(notificationsApi.endpoints.markAsDone.initiate({ id: selected.id, subjectId: selected.subjectId }));
+    dispatch(adjustSelectionAfterRemoval({ newListLength: listLength - 1 }));
+  }
 });
 
 /**
@@ -90,10 +106,13 @@ export const markNotificationAsDone = createAsyncThunk<
  */
 export const unsubscribeFromNotification = createAsyncThunk<
   void,
-  { notificationId: string; subjectId: string },
+  void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/unsubscribeFromNotification", async ({ notificationId, subjectId }, { dispatch }) => {
-  dispatch(notificationsApi.endpoints.unsubscribe.initiate({ id: notificationId, subjectId }));
+>("keyboard/unsubscribeFromNotification", async (_, { dispatch, getState }) => {
+  const selected = selectSelectedNotification(getState());
+  if (selected) {
+    dispatch(notificationsApi.endpoints.unsubscribe.initiate({ id: selected.id, subjectId: selected.subjectId }));
+  }
 });
 
 /**
@@ -109,21 +128,29 @@ export const refreshNotifications = createAsyncThunk<
 });
 
 /**
- * Thunk for handling escape key press.
- * Double-escape quits the app.
+ * Thunk for moving selection down.
+ * Gets list length from selector.
  */
-export const handleEscapeKey = createAsyncThunk<
+export const moveDown = createAsyncThunk<
   void,
   void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/handleEscapeKey", async (_, { dispatch, getState }) => {
-  const state = getState().ui;
-  if (state.escapePressed) {
-    dispatch(setExiting(true));
-    setTimeout(() => process.exit(0), 50);
-  } else {
-    dispatch(setEscapePressed(true));
-  }
+>("keyboard/moveDown", async (_, { dispatch, getState }) => {
+  const listLength = selectFilteredNotificationsLength(getState());
+  dispatch(moveSelectionDown({ listLength }));
+});
+
+/**
+ * Thunk for jumping to end of list.
+ * Gets list length from selector.
+ */
+export const jumpToListEnd = createAsyncThunk<
+  void,
+  void,
+  { state: RootState; dispatch: AppDispatch }
+>("keyboard/jumpToListEnd", async (_, { dispatch, getState }) => {
+  const listLength = selectFilteredNotificationsLength(getState());
+  dispatch(jumpToEnd({ listLength }));
 });
 
 /**
@@ -143,23 +170,132 @@ export const quitApp = createAsyncThunk<
  */
 export const openInBrowser = createAsyncThunk<
   void,
-  { url: string },
+  void,
   { state: RootState; dispatch: AppDispatch }
->("keyboard/openInBrowser", async ({ url }) => {
-  Bun.spawn(["open", url]);
+>("keyboard/openInBrowser", async (_, { getState }) => {
+  const selected = selectSelectedNotification(getState());
+  if (selected) {
+    Bun.spawn(["open", selected.url]);
+  }
 });
 
 interface HandleKeyboardInputPayload {
   input: string;
-  key: {
-    tab: boolean;
-    shift: boolean;
-    escape: boolean;
-    return: boolean;
-    downArrow: boolean;
-    upArrow: boolean;
-  };
+  key: Key;
 }
+
+type BufferEntry = { input: string; key: Key };
+
+/**
+ * Get the last key from the buffer.
+ */
+function lastKey(buffer: BufferEntry[]): BufferEntry | undefined {
+  return buffer[buffer.length - 1];
+}
+
+/**
+ * Check if the buffer ends with a specific input sequence.
+ */
+function bufferEndsWith(buffer: BufferEntry[], sequence: string[]): boolean {
+  if (buffer.length < sequence.length) return false;
+  return buffer
+    .slice(-sequence.length)
+    .map((k) => k.input)
+    .every((input, i) => input === sequence[i]);
+}
+
+interface KeyBinding {
+  match: (buffer: BufferEntry[]) => boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  action: () => any;
+}
+
+export interface HelpSection {
+  title: string;
+  bindings: { key: string; description: string }[];
+}
+
+/**
+ * Declarative key bindings for the app.
+ * Order matters - first match wins.
+ * Match functions receive the buffer (including current key).
+ */
+const keyBindings: KeyBinding[] = [
+  // Help toggle
+  { match: (b) => lastKey(b)?.input === "?", action: toggleHelp },
+
+  // Double escape -> quit
+  { match: (b) => b.slice(-2).filter((k) => k.key.escape).length === 2, action: quitApp },
+
+  // gg -> jump to start
+  { match: (b) => bufferEndsWith(b, ["g", "g"]), action: () => jumpToStart() },
+
+  // Tab navigation
+  { match: (b) => lastKey(b)?.input === "l" || !!(lastKey(b)?.key.tab && !lastKey(b)?.key.shift), action: nextTab },
+  { match: (b) => lastKey(b)?.input === "h" || !!(lastKey(b)?.key.tab && lastKey(b)?.key.shift), action: prevTab },
+
+  // Jump to end
+  { match: (b) => lastKey(b)?.input === "G", action: jumpToListEnd },
+
+  // Quit
+  { match: (b) => lastKey(b)?.input === "q", action: quitApp },
+
+  // Selection navigation
+  { match: (b) => !!(lastKey(b)?.key.downArrow || lastKey(b)?.input === "j"), action: moveDown },
+  { match: (b) => !!(lastKey(b)?.key.upArrow || lastKey(b)?.input === "k"), action: () => moveSelectionUp() },
+
+  // Open in browser
+  { match: (b) => !!lastKey(b)?.key.return, action: openInBrowser },
+
+  // Mark as read/unread
+  { match: (b) => lastKey(b)?.input === "m", action: markNotificationAsRead },
+  { match: (b) => lastKey(b)?.input === "M", action: markNotificationAsUnread },
+
+  // Mark as done
+  { match: (b) => lastKey(b)?.input === "d" || lastKey(b)?.input === "y", action: markNotificationAsDone },
+
+  // Unsubscribe
+  { match: (b) => lastKey(b)?.input === "U", action: unsubscribeFromNotification },
+
+  // Refresh
+  { match: (b) => lastKey(b)?.input === "R", action: refreshNotifications },
+];
+
+/**
+ * Help sections for the help screen, organized by category.
+ */
+export const helpSections: HelpSection[] = [
+  {
+    title: "Navigation",
+    bindings: [
+      { key: "Tab/l", description: "Next category" },
+      { key: "⇧Tab/h", description: "Previous category" },
+      { key: "↑/k", description: "Move up" },
+      { key: "↓/j", description: "Move down" },
+      { key: "gg", description: "Go to top" },
+      { key: "G", description: "Go to bottom" },
+    ],
+  },
+  {
+    title: "Actions",
+    bindings: [
+      { key: "Enter", description: "Open PR in browser" },
+      { key: "m", description: "Mark as read" },
+      { key: "M", description: "Mark as unread" },
+      { key: "d/y", description: "Mark as done" },
+      { key: "U", description: "Unsubscribe" },
+      { key: "R", description: "Refresh" },
+    ],
+  },
+  {
+    title: "Other",
+    bindings: [
+      { key: "Esc×2", description: "Quit" },
+      { key: "q", description: "Quit" },
+      { key: "?", description: "Toggle this help" },
+    ],
+  },
+];
 
 /**
  * Main keyboard input handler thunk.
@@ -170,130 +306,40 @@ export const handleKeyboardInput = createAsyncThunk<
   HandleKeyboardInputPayload,
   { state: RootState; dispatch: AppDispatch }
 >("keyboard/handleInput", async ({ input, key }, { dispatch, getState }) => {
-  const rootState = getState();
-  const state = rootState.ui;
-  const filteredNotifications = selectFilteredNotifications(rootState);
-  const listLength = filteredNotifications.length;
+  const state = getState().ui;
 
   if (state.exiting) return;
 
-  // Help toggle - special case, always handle "?"
-  if (input === "?") {
-    dispatch(toggleHelp());
-    return;
-  }
-
-  // If help is showing, dismiss on any key
-  if (state.showHelp) {
+  // If help is showing, dismiss on any key except "?"
+  if (state.showHelp && input !== "?") {
     dispatch(setShowHelp(false));
     return;
   }
 
-  // Handle 'g' key specially (for gg motion)
-  if (input === "g") {
-    dispatch(pressG());
-    return;
+  // Build buffer with current key for matching
+  const bufferWithCurrent = [...state.keyBuffer, { input, key }];
+
+  // Find matching keybinding
+  const binding = keyBindings.find((b) => b.match(bufferWithCurrent));
+
+  // Clear any existing timeout since we got a keypress
+  if (bufferClearTimeout) {
+    clearTimeout(bufferClearTimeout);
+    bufferClearTimeout = null;
   }
 
-  // Reset gPressed on any key except 'g'
-  if (state.gPressed) {
-    dispatch(setGPressed(false));
-  }
+  if (binding) {
+    // Match found - execute action and clear buffer
+    dispatch(clearKeyBuffer());
+    dispatch(binding.action());
+  } else {
+    // No match - push to buffer for potential future sequence
+    dispatch(pushKey({ input, key }));
 
-  // Escape handling
-  if (key.escape) {
-    dispatch(handleEscapeKey());
-    return;
-  }
-
-  // Reset escape on any other key
-  if (state.escapePressed) {
-    dispatch(setEscapePressed(false));
-  }
-
-  // Navigation keys
-  if (input === "l" || (key.tab && !key.shift)) {
-    dispatch(nextTab());
-    return;
-  }
-  if (input === "h" || (key.tab && key.shift)) {
-    dispatch(prevTab());
-    return;
-  }
-  if (input === "G") {
-    dispatch(jumpToEnd({ listLength }));
-    return;
-  }
-
-  // Quit
-  if (input === "q") {
-    dispatch(quitApp());
-    return;
-  }
-
-  // Selection navigation
-  if (key.downArrow || input === "j") {
-    dispatch(moveSelectionDown({ listLength }));
-    return;
-  }
-  if (key.upArrow || input === "k") {
-    dispatch(moveSelectionUp());
-    return;
-  }
-
-  // Open in browser
-  if (key.return) {
-    const selected = filteredNotifications[state.selectedIndex];
-    if (selected) {
-      dispatch(openInBrowser({ url: selected.url }));
-    }
-    return;
-  }
-
-  // m = mark as read
-  if (input === "m") {
-    const selected = filteredNotifications[state.selectedIndex];
-    if (selected?.unread) {
-      dispatch(markNotificationAsRead({ notificationId: selected.id }));
-    }
-    return;
-  }
-
-  // M = mark as unread
-  if (input === "M") {
-    const selected = filteredNotifications[state.selectedIndex];
-    if (selected && !selected.unread) {
-      dispatch(markNotificationAsUnread({ notificationId: selected.id }));
-    }
-    return;
-  }
-
-  // d or y = mark as done
-  if (input === "d" || input === "y") {
-    const selected = filteredNotifications[state.selectedIndex];
-    if (selected) {
-      dispatch(markNotificationAsDone({
-        notificationId: selected.id,
-        subjectId: selected.subjectId,
-      }));
-    }
-    return;
-  }
-
-  // U = unsubscribe
-  if (input === "U") {
-    const selected = filteredNotifications[state.selectedIndex];
-    if (selected) {
-      dispatch(unsubscribeFromNotification({
-        notificationId: selected.id,
-        subjectId: selected.subjectId,
-      }));
-    }
-    return;
-  }
-
-  // R = refresh
-  if (input === "R") {
-    dispatch(refreshNotifications());
+    // Set timeout to clear buffer after 2 seconds of inactivity
+    bufferClearTimeout = setTimeout(() => {
+      dispatch(clearKeyBuffer());
+      bufferClearTimeout = null;
+    }, BUFFER_TIMEOUT_MS);
   }
 });

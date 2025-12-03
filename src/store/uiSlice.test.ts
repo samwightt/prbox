@@ -7,23 +7,38 @@ import uiReducer, {
   jumpToEnd,
   toggleHelp,
   setShowHelp,
-  setEscapePressed,
-  setGPressed,
-  pressG,
   setExiting,
   adjustSelectionAfterRemoval,
   setSelectedIndex,
   setSelectedTabIndex,
+  pushKey,
+  clearKeyBuffer,
 } from "./uiSlice";
 
 const initialState: UiState = {
   selectedIndex: 0,
   selectedTabIndex: 0,
-  escapePressed: false,
-  gPressed: false,
+  keyBuffer: [],
   exiting: false,
   showHelp: false,
   terminalHeight: 24,
+};
+
+const mockKey = {
+  upArrow: false,
+  downArrow: false,
+  leftArrow: false,
+  rightArrow: false,
+  pageDown: false,
+  pageUp: false,
+  return: false,
+  escape: false,
+  ctrl: false,
+  shift: false,
+  tab: false,
+  backspace: false,
+  delete: false,
+  meta: false,
 };
 
 describe("uiSlice", () => {
@@ -88,19 +103,6 @@ describe("uiSlice", () => {
       const result = uiReducer(state, jumpToEnd({ listLength: 0 }));
       expect(result.selectedIndex).toBe(0);
     });
-
-    test("pressG sets gPressed flag when not pressed", () => {
-      const state = { ...initialState, gPressed: false };
-      const result = uiReducer(state, pressG());
-      expect(result.gPressed).toBe(true);
-    });
-
-    test("pressG jumps to start when gPressed (gg)", () => {
-      const state = { ...initialState, selectedIndex: 5, gPressed: true };
-      const result = uiReducer(state, pressG());
-      expect(result.selectedIndex).toBe(0);
-      expect(result.gPressed).toBe(false);
-    });
   });
 
   describe("state flags", () => {
@@ -118,22 +120,59 @@ describe("uiSlice", () => {
       expect(result.showHelp).toBe(false);
     });
 
-    test("setEscapePressed sets value", () => {
-      const state = { ...initialState, escapePressed: false };
-      const result = uiReducer(state, setEscapePressed(true));
-      expect(result.escapePressed).toBe(true);
-    });
-
-    test("setGPressed sets value", () => {
-      const state = { ...initialState, gPressed: false };
-      const result = uiReducer(state, setGPressed(true));
-      expect(result.gPressed).toBe(true);
-    });
-
     test("setExiting sets value", () => {
       const state = { ...initialState, exiting: false };
       const result = uiReducer(state, setExiting(true));
       expect(result.exiting).toBe(true);
+    });
+  });
+
+  describe("key buffer", () => {
+    test("pushKey adds key to buffer", () => {
+      const state = { ...initialState };
+      const result = uiReducer(state, pushKey({ input: "g", key: mockKey }));
+      expect(result.keyBuffer).toHaveLength(1);
+      expect(result.keyBuffer[0]!.input).toBe("g");
+    });
+
+    test("pushKey accumulates keys", () => {
+      const state = {
+        ...initialState,
+        keyBuffer: [{ input: "a", key: mockKey }],
+      };
+      const result = uiReducer(state, pushKey({ input: "b", key: mockKey }));
+      expect(result.keyBuffer).toHaveLength(2);
+      expect(result.keyBuffer[0]!.input).toBe("a");
+      expect(result.keyBuffer[1]!.input).toBe("b");
+    });
+
+    test("pushKey limits buffer to 5 keys", () => {
+      const state = {
+        ...initialState,
+        keyBuffer: [
+          { input: "a", key: mockKey },
+          { input: "b", key: mockKey },
+          { input: "c", key: mockKey },
+          { input: "d", key: mockKey },
+          { input: "e", key: mockKey },
+        ],
+      };
+      const result = uiReducer(state, pushKey({ input: "f", key: mockKey }));
+      expect(result.keyBuffer).toHaveLength(5);
+      expect(result.keyBuffer[0]!.input).toBe("b");
+      expect(result.keyBuffer[4]!.input).toBe("f");
+    });
+
+    test("clearKeyBuffer empties buffer", () => {
+      const state = {
+        ...initialState,
+        keyBuffer: [
+          { input: "a", key: mockKey },
+          { input: "b", key: mockKey },
+        ],
+      };
+      const result = uiReducer(state, clearKeyBuffer());
+      expect(result.keyBuffer).toHaveLength(0);
     });
   });
 
