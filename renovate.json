@@ -1,6 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "security:openssf-scorecard",
+    "security:minimumReleaseAgeNpm",
+    ":enableVulnerabilityAlerts",
+    ":maintainLockFilesWeekly",
+    ":rebaseStalePrs",
+    "abandonments:recommended",
+    "mergeConfidence:all-badges"
+  ],
+  "schedule": ["before 9am on monday"],
+  "packageRules": [
+    {
+      "matchPackagePatterns": ["^@types/"],
+      "groupName": "types"
+    },
+    {
+      "matchPackagePatterns": ["redux", "reduxjs"],
+      "groupName": "redux"
+    }
   ]
 }
