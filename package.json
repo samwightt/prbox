@@ -18,7 +18,7 @@
     "typecheck": "tsc --noEmit",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "bun run build && bun pm pack --filename prbox.tgz && bunx npm publish prbox.tgz --provenance --access public --tolerate-republish"
+    "release": "bun run build && bun pm pack --filename prbox.tgz && npm publish prbox.tgz --provenance --access public --tolerate-republish"
   },
   "keywords": [
     "github",
