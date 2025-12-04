@@ -13,6 +13,7 @@ export function NotificationList() {
   const selectedIndex = useAppSelector((state) => state.ui.selectedIndex);
 
   // Measure the available height after layout
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (ref.current) {
       const { height } = measureElement(ref.current);

@@ -191,7 +191,7 @@ export const openInBrowser = createAsyncThunk<
 >("keyboard/openInBrowser", async (_, { getState }) => {
   const selected = selectSelectedNotification(getState());
   if (selected) {
-    $`open ${selected.url}`;
+    void $`open ${selected.url}`;
   }
 });
 

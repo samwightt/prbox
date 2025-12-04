@@ -9,7 +9,7 @@ export function HelpScreen() {
     <Box flexDirection="column" padding={2}>
       <Text bold color="cyan">Keyboard Shortcuts</Text>
       <Text dimColor>{"─".repeat(30)}</Text>
-      {helpSections.map((section, i) => (
+      {helpSections.map((section) => (
         <React.Fragment key={section.title}>
           <Text> </Text>
           {section.bindings.map((binding) => (

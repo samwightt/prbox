@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import type { ParsedNotification, StatusCheckState } from "../types";
+import type { ParsedNotification } from "../types";
 
 function shortTimeAgo(dateString: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
@@ -17,21 +17,6 @@ function shortTimeAgo(dateString: string): string {
   if (months < 12) return `${months}mo`;
   const years = Math.floor(days / 365);
   return `${years}y`;
-}
-
-function StatusCheck({ status, isRead }: { status: StatusCheckState | null; isRead: boolean }) {
-  if (!status) return null;
-
-  if (status === "success") {
-    return <Text color={isRead ? "gray" : "green"}> ✓</Text>;
-  }
-
-  if (status === "failure") {
-    return <Text color={isRead ? "gray" : "red"}> ✗</Text>;
-  }
-
-  // pending
-  return <Text color={isRead ? "gray" : "yellow"}> ○</Text>;
 }
 
 function truncate(text: string, maxLength: number): string {

@@ -350,7 +350,7 @@ export const notificationsApi = createApi({
       queryFn: async ({ subjectId }) => {
         // Fire and forget - approve the PR
         const mutation = `mutation($prId: ID!) { addPullRequestReview(input: { pullRequestId: $prId, event: APPROVE }) { clientMutationId } }`;
-        $({ reject: false })`gh api graphql -f query=${mutation} -f prId=${subjectId}`;
+        void $({ reject: false })`gh api graphql -f query=${mutation} -f prId=${subjectId}`;
         return { data: undefined };
       },
       onQueryStarted: async ({ id }, { dispatch, queryFulfilled }) => {
