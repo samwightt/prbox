@@ -168,8 +168,8 @@ function createBatchedMutationExecutor(
     pendingIds = [];
 
     const mutation = mutationTemplate(ids);
-    const proc = Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`]);
-    return proc.exited;
+    const proc = $({ reject: false })`gh api graphql -f query=${mutation}`;
+    return proc;
   };
 
   const enqueue = (id: string) => {
@@ -350,7 +350,7 @@ export const notificationsApi = createApi({
       queryFn: async ({ subjectId }) => {
         // Fire and forget - approve the PR
         const mutation = `mutation($prId: ID!) { addPullRequestReview(input: { pullRequestId: $prId, event: APPROVE }) { clientMutationId } }`;
-        Bun.spawn(["gh", "api", "graphql", "-f", `query=${mutation}`, "-f", `prId=${subjectId}`]);
+        $({ reject: false })`gh api graphql -f query=${mutation} -f prId=${subjectId}`;
         return { data: undefined };
       },
       onQueryStarted: async ({ id }, { dispatch, queryFulfilled }) => {

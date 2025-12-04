@@ -1,3 +1,5 @@
+import { execSync } from "child_process";
+
 export const kaomojiFaces = [
   "(◕‿◕)",
   "(◕ᴗ◕)",
@@ -531,12 +533,12 @@ function pick<T>(arr: T[]): T {
 export function getFirstName(): string {
   try {
     // Try git config first
-    const gitName = Bun.spawnSync(["git", "config", "--global", "user.name"]).stdout.toString().trim();
+    const gitName = execSync("git config --global user.name", { encoding: "utf-8" }).trim();
     if (gitName) {
       return gitName.split(" ")[0] ?? "friend";
     }
     // Fall back to macOS id -F
-    const fullName = Bun.spawnSync(["id", "-F"]).stdout.toString().trim();
+    const fullName = execSync("id -F", { encoding: "utf-8" }).trim();
     return fullName.split(" ")[0] ?? "friend";
   } catch {
     return "friend";

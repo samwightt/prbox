@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { $ } from "execa";
 import type { Key } from "ink";
 import type { RootState, AppDispatch } from "./index";
 import {
@@ -190,7 +191,7 @@ export const openInBrowser = createAsyncThunk<
 >("keyboard/openInBrowser", async (_, { getState }) => {
   const selected = selectSelectedNotification(getState());
   if (selected) {
-    Bun.spawn(["open", selected.url]);
+    $`open ${selected.url}`;
   }
 });
 
@@ -265,9 +266,9 @@ const keyBindings: KeyBinding[] = [
   // Open in browser
   { match: (b) => !!lastKey(b)?.key.return, action: openInBrowser },
 
-  // Mark as read/unread
-  { match: (b) => lastKey(b)?.input === "m", action: markNotificationAsRead },
-  { match: (b) => lastKey(b)?.input === "M", action: markNotificationAsUnread },
+  // Mark as read/unread (m/I for read, M/u for unread - Gmail-style alternatives)
+  { match: (b) => lastKey(b)?.input === "m" || lastKey(b)?.input === "I", action: markNotificationAsRead },
+  { match: (b) => lastKey(b)?.input === "M" || lastKey(b)?.input === "u", action: markNotificationAsUnread },
 
   // Mark as done
   { match: (b) => lastKey(b)?.input === "d" || lastKey(b)?.input === "y", action: markNotificationAsDone },
@@ -298,8 +299,8 @@ export const helpSections: HelpSection[] = [
     title: "Actions",
     bindings: [
       { key: "Enter", description: "Open PR in browser" },
-      { key: "m", description: "Mark as read" },
-      { key: "M", description: "Mark as unread" },
+      { key: "m/I", description: "Mark as read" },
+      { key: "M/u", description: "Mark as unread" },
       { key: "d/y", description: "Mark as done" },
       { key: "U", description: "Unsubscribe" },
       { key: "AAA", description: "Approve PR" },

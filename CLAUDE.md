@@ -1,4 +1,4 @@
-# ghn - GitHub Notifications CLI
+# prbox - GitHub Notifications CLI
 
 A terminal UI for triaging GitHub notifications. Built with Bun, [Ink](https://github.com/vadimdemedes/ink) (React for CLIs), and the GitHub GraphQL API via the `gh` CLI.
 
@@ -13,9 +13,9 @@ GitHub's notification system is broken for teams with high notification volume (
 
 Worse, GitHub doesn't show *why* you're receiving a notification. A commit push, a bot comment, a reply to your review, and a re-requested review all look identical. You have to click into each one to find out.
 
-## How ghn Fixes This
+## How prbox Fixes This
 
-The key insight is that `ghn` checks the **current state** of each PR via the GraphQL API, not just what GitHub's notification says. This enables smart categorization:
+The key insight is that `prbox` checks the **current state** of each PR via the GraphQL API, not just what GitHub's notification says. This enables smart categorization:
 
 - **needs_review** - PRs where your review is *currently* pending. Checks actual pending reviewers right now and compares against your team memberships.
 - **replied** - PRs where someone replied to your review comments. GitHub doesn't surface this unless you're @mentioned.
