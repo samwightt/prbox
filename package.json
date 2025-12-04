@@ -15,6 +15,7 @@
     "build": "bun build ./src/cli.tsx --outfile dist/cli.js --target node",
     "lint": "oxlint src/ --react-plugin",
     "lint:fix": "oxlint src/ --react-plugin --fix",
+    "typecheck": "tsc --noEmit",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "bun run build && changeset publish"

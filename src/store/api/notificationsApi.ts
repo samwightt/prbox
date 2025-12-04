@@ -144,7 +144,7 @@ async function checkGhCliAndAuth(): Promise<{ login: string }> {
 }
 
 // All batch executors register themselves here
-const allBatchExecutors: { flush: () => Promise<number> | null }[] = [];
+const allBatchExecutors: { flush: () => Promise<unknown> | null }[] = [];
 
 /**
  * Debounced batch executor for GraphQL mutations.

@@ -6,4 +6,4 @@ pre-commit:
       run: bun run lint
     typecheck:
       glob: "*.{ts,tsx}"
-      run: bunx tsc --noEmit
+      run: bun run typecheck
