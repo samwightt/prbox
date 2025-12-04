@@ -8,7 +8,7 @@
     "prbox": "./dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist/cli.js"
   ],
   "scripts": {
     "start": "bun src/cli.tsx",
