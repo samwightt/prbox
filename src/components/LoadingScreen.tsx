@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Text } from "ink";
+import { Box, Text } from "ink";
 import { randomLoadingText, getFirstName } from "../constants";
 
 export function LoadingScreen() {
@@ -17,9 +17,11 @@ export function LoadingScreen() {
   }, [displayedLength, fullText.length]);
 
   return (
-    <Text color="magenta">
-      {fullText.slice(0, displayedLength)}
-      {displayedLength < fullText.length && "█"}
-    </Text>
+    <Box width="100%" height="100%" justifyContent="center" alignItems="center">
+      <Text color="magenta">
+        {fullText.slice(0, displayedLength)}
+        {displayedLength < fullText.length && "█"}
+      </Text>
+    </Box>
   );
 }

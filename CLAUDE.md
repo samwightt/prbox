@@ -157,3 +157,7 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## Changesets
+
+This repo uses changesets. Any time you open a PR or make a substantial change that could be considered a patch, minor, or major change, create a changeset. Be sure it's descriptive enough for the changelog but not overly long.
