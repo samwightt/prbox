@@ -7,8 +7,7 @@
     ":enableVulnerabilityAlerts",
     ":maintainLockFilesWeekly",
     ":rebaseStalePrs",
-    "abandonments:recommended",
-    "mergeConfidence:all-badges"
+    "abandonments:recommended"
   ],
   "schedule": ["before 9am on monday"],
   "packageRules": [
