@@ -8,6 +8,7 @@ import {
 import { NotificationList } from "./NotificationList";
 import { TabBar } from "./TabBar";
 import { Footer } from "./Footer";
+import { UpdateNotification } from "./UpdateNotification";
 
 export function MainLayout() {
   const notifications = useAppSelector(selectNotifications);
@@ -36,6 +37,9 @@ export function MainLayout() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Update notification */}
+      <UpdateNotification />
     </Box>
   );
 }
