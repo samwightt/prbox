@@ -31,8 +31,9 @@ function App() {
   // Exit the app properly when exiting state is set
   useEffect(() => {
     if (ui.exiting) {
-      // Flush any pending mutations and wait for them before exiting
-      flushPendingMutations().then(() => {
+      // Wait for both the flush and a minimum delay before exiting
+      const minDelay = new Promise((resolve) => setTimeout(resolve, 1000));
+      Promise.all([flushPendingMutations(), minDelay]).then(() => {
         app.exit();
       });
     }
@@ -72,6 +73,12 @@ function Root() {
 }
 
 const app = withFullScreen(<Root />, { patchConsole: false });
+
+// Handle Ctrl+C gracefully - trigger exiting state to show bye screen and flush
+process.on("SIGINT", () => {
+  store.dispatch({ type: "ui/setExiting", payload: true });
+});
+
 await app.start();
 await app.waitUntilExit();
 process.exit(0);
