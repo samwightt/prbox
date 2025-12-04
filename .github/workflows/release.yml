@@ -21,6 +21,17 @@ jobs:
         uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          registry-url: 'https://registry.npmjs.org'
+
+      # npm 11.5.1 or later must be installed for OIDC to work
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - run: bun install
 
       - name: Create Release Pull Request or Publish
