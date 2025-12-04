@@ -1,5 +1,11 @@
 # prbox
 
+## 0.2.1
+
+### Patch Changes
+
+- Fixed some stuff.
+
 ## 0.2.0
 
 ### Minor Changes
