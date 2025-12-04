@@ -15,6 +15,8 @@ or:
 bun install -g prbox
 ```
 
+Ensure you have the `gh` CLI installed via `brew install gh` (or similar), as `prbox` uses the CLI to send API requests.
+
 ## The problem
 
 Teams with monorepos or whose members are assigned to multiple GitHub teams often have very large notification volume.
