@@ -1,6 +1,6 @@
 {
   "name": "prbox",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A terminal UI for triaging GitHub notifications",
   "license": "MIT",
   "type": "module",
