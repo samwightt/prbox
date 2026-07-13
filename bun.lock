@@ -22,7 +22,7 @@
         "oxlint": "^1.31.0",
       },
       "peerDependencies": {
-        "typescript": "^5",
+        "typescript": "^5 || ^7.0.0",
       },
     },
   },
