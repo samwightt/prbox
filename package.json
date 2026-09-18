@@ -51,7 +51,7 @@
     "date-fns": "^4.1.0",
     "execa": "^9.6.1",
     "fullscreen-ink": "^0.1.0",
-    "ink": "^6.5.1",
+    "ink": "^7.0.0",
     "react": "^19.2.0",
     "react-devtools-core": "^7.0.1",
     "react-redux": "^9.2.0"
